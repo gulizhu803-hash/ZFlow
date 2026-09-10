@@ -1,0 +1,136 @@
+package com.zgl.zflow.domain.ai.service.execute.loop.node;
+
+import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
+import com.alibaba.fastjson2.JSONObject;
+import com.zgl.zflow.domain.ai.model.entity.ExecuteResponseEntity;
+import com.zgl.zflow.domain.ai.model.entity.ExecuteRequestEntity;
+import com.zgl.zflow.domain.ai.model.vo.AiFlowVO;
+import com.zgl.zflow.domain.ai.service.execute.AbstractExecuteNode;
+import com.zgl.zflow.domain.ai.service.execute.ExecuteContext;
+import com.zgl.zflow.types.exception.MissingException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Service;
+
+import static com.zgl.zflow.domain.ai.model.enumeration.AiClientRole.ANALYZER;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiClientRole.PERFORMER;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiClientRole.SUMMARIZER;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiSectionType.*;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiType.CLIENT;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_RETRIEVE_SIZE_WORK;
+import static com.zgl.zflow.types.constant.ExceptionMessage.EXECUTE_ANALYZER_RESULT_EMPTY;
+
+@Slf4j
+@Service(value = "analyzerNode")
+public class LoopAnalyzerNode extends AbstractExecuteNode {
+
+    @Override
+    protected String doApply(ExecuteRequestEntity executeRequestEntity, ExecuteContext executeContext) throws Exception {
+
+        String analyzerJson;
+        JSONObject analyzerObject;
+
+        String executionHistory = executeContext.getExecutionHistory().toString();
+        if (executionHistory.isEmpty()) {
+            executionHistory = "[暂无记录]";
+        }
+
+        try {
+
+            // 获取客户端
+            AiFlowVO aiFlowVO = executeContext.getAiFlowVOMap().get(ANALYZER.getRole());
+            String clientBeanName = CLIENT.getBeanName(aiFlowVO.getClientId());
+            ChatClient analyzerClient = getBean(clientBeanName);
+
+            // 获取提示词
+            String userPrompt = aiFlowVO.getUserPrompt();
+            String analyzerPrompt = userPrompt.formatted(
+                    executeContext.getRound(),
+                    executeContext.getMaxRound(),
+                    executeContext.getUserMessage(),
+                    executeContext.getCurrentTask(),
+                    executionHistory
+            );
+
+            // 获取客户端结果
+            String analyzerResponse = analyzerClient
+                    .prompt(analyzerPrompt)
+                    .advisors(a -> a
+                            .param(CHAT_MEMORY_CONVERSATION_ID_KEY, executeRequestEntity.getSessionId())
+                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE_WORK))
+                    .call()
+                    .content();
+
+            // 解析客户端结果
+            analyzerJson = extractJson(analyzerResponse, "{}");
+            analyzerObject = parseJsonObject(analyzerJson);
+            if (analyzerObject == null) {
+                throw new MissingException(EXECUTE_ANALYZER_RESULT_EMPTY);
+            }
+
+        } catch (Exception e) {
+            log.error("【执行节点】LoopAnalyzerNode", e);
+            analyzerObject = buildExceptionObject(ANALYZER.getExceptionType(), e.getMessage());
+            analyzerJson = analyzerObject.toJSONString();
+        }
+
+        // 发送客户端结果
+        parseAnalyzerResponse(executeContext, analyzerObject, executeRequestEntity.getSessionId());
+
+        // 保存客户端结果
+        executeContext.setValue(ANALYZER.getContextKey(), analyzerJson);
+
+        // 检查客户端结果
+        String analyzerStatus = analyzerObject.getString(ANALYZER_STATUS.getType());
+        String analyzerProgress = analyzerObject.getString(ANALYZER_PROGRESS.getType());
+        if ("COMPLETED".equalsIgnoreCase(analyzerStatus) || "100".equals(analyzerProgress)) {
+            executeContext.setCompleted(true);
+            return router(executeRequestEntity, executeContext);
+        }
+
+        return router(executeRequestEntity, executeContext);
+    }
+
+    @Override
+    public StrategyHandler<ExecuteRequestEntity, ExecuteContext, String> get(ExecuteRequestEntity executeRequestEntity, ExecuteContext executeContext) throws Exception {
+
+        LoopPerformerNode loopPerformerNode = getBean(PERFORMER.getNodeName());
+        LoopSummarizerNode loopSummarizerNode = getBean(SUMMARIZER.getNodeName());
+
+        if (executeContext.getCompleted() == true) {
+            log.info("【执行节点】LoopAnalyzerNode：任务判定已完成");
+            return loopSummarizerNode;
+        } else {
+            return loopPerformerNode;
+        }
+
+    }
+
+    private void parseAnalyzerResponse(ExecuteContext executeContext, JSONObject analyzerObject, String sessionId) {
+        if (analyzerObject == null) {
+            return;
+        }
+        sendAnalyzerResponse(executeContext, ANALYZER.getExceptionType(), analyzerObject.getString(ANALYZER.getExceptionType()), sessionId);
+        sendAnalyzerResponse(executeContext, ANALYZER_DEMAND.getType(), analyzerObject.getString(ANALYZER_DEMAND.getType()), sessionId);
+        sendAnalyzerResponse(executeContext, ANALYZER_HISTORY.getType(), analyzerObject.getString(ANALYZER_HISTORY.getType()), sessionId);
+        sendAnalyzerResponse(executeContext, ANALYZER_STRATEGY.getType(), analyzerObject.getString(ANALYZER_STRATEGY.getType()), sessionId);
+        sendAnalyzerResponse(executeContext, ANALYZER_PROGRESS.getType(), analyzerObject.getString(ANALYZER_PROGRESS.getType()), sessionId);
+        sendAnalyzerResponse(executeContext, ANALYZER_STATUS.getType(), analyzerObject.getString(ANALYZER_STATUS.getType()), sessionId);
+    }
+
+    private void sendAnalyzerResponse(ExecuteContext executeContext, String sectionType, String sectionContent, String sessionId) {
+        if (!sectionType.isEmpty() && sectionContent != null && !sectionContent.isEmpty()) {
+            ExecuteResponseEntity executeResponseEntity = ExecuteResponseEntity.createAnalyzerResponse(
+                    sectionType,
+                    sectionContent,
+                    executeContext.getRound(),
+                    sessionId
+            );
+
+            sendSseMessage(executeContext, executeResponseEntity);
+        }
+    }
+
+}

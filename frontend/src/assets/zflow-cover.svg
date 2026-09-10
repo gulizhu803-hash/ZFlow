@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200" viewBox="0 0 800 1200" role="img" aria-labelledby="title desc">
+  <title id="title">知流 ZFlow</title>
+  <desc id="desc">蓝色的节点连接成 Z 形，代表知识、工具与智能体的协作。</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#eef5ff"/>
+      <stop offset=".5" stop-color="#e1ecff"/>
+      <stop offset="1" stop-color="#c8dcff"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#59a0ff"/>
+      <stop offset="1" stop-color="#294edb"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#fff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#7b9de0" stroke-opacity=".13"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="1200" fill="url(#background)"/>
+  <rect width="800" height="1200" fill="url(#grid)"/>
+  <ellipse cx="390" cy="500" rx="460" ry="490" fill="url(#glow)"/>
+  <g fill="none" stroke="#96b5ed" stroke-width="2" opacity=".55">
+    <circle cx="400" cy="475" r="264"/>
+    <circle cx="400" cy="475" r="215" stroke-dasharray="4 14"/>
+    <path d="M140 322L274 378M660 312L536 378M168 735L286 574M661 743L535 574"/>
+  </g>
+  <g fill="#f8fbff" stroke="#bfd3f4" stroke-width="2">
+    <rect x="101" y="283" width="78" height="78" rx="22" transform="rotate(-12 140 322)"/>
+    <rect x="621" y="273" width="78" height="78" rx="22" transform="rotate(12 660 312)"/>
+    <circle cx="168" cy="735" r="19"/>
+    <circle cx="661" cy="743" r="27"/>
+  </g>
+  <g fill="none" stroke="#648ee0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M126 306H154V338H126ZM133 316H147M133 325H143"/>
+    <path d="M650 300L640 312L650 324M670 300L680 312L670 324"/>
+  </g>
+  <rect x="266" y="341" width="268" height="268" rx="76" fill="#6a94e7" opacity=".12" transform="translate(0 15)"/>
+  <rect x="266" y="341" width="268" height="268" rx="76" fill="#f9fbff" stroke="#fff" stroke-width="3"/>
+  <path d="M337 414H463L337 536H463" fill="none" stroke="url(#blue)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="337" cy="414" r="20" fill="#65b9ff"/>
+  <circle cx="463" cy="536" r="20" fill="#294edb"/>
+  <g text-anchor="middle" font-family="Inter, Segoe UI, Microsoft YaHei, sans-serif">
+    <text x="400" y="152" fill="#5a79b0" font-size="17" letter-spacing="8">KNOWLEDGE IN FLOW</text>
+    <text x="400" y="754" fill="#2444a2" font-size="94" font-weight="750" letter-spacing="-3">ZFlow</text>
+    <text x="400" y="817" fill="#3c64b5" font-size="34" font-weight="600" letter-spacing="12">知流</text>
+    <text x="400" y="888" fill="#6c83ae" font-size="22">让知识流动，让智能协作</text>
+    <text x="400" y="1076" fill="#7891ba" font-size="16" letter-spacing="3">ZFLOW · BY ZGL</text>
+  </g>
+</svg>

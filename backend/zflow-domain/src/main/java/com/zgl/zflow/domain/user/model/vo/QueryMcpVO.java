@@ -1,0 +1,20 @@
+package com.zgl.zflow.domain.user.model.vo;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class QueryMcpVO {
+
+    private String mcpId;
+
+    private String mcpName;
+
+    private String mcpDesc;
+
+}

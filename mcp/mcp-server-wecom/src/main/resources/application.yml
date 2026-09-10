@@ -1,0 +1,31 @@
+server:
+  port: 9002
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
+spring:
+  main:
+    banner-mode: off
+    log-startup-info: false
+  application:
+    name: mcp-server-wecom
+
+  ai:
+    mcp:
+      server:
+        name: mcp-server-wecom
+        version: 1.0.0
+
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml
+
+miniagent:
+  mcp:
+    header:
+      secret: X-MiniAgent-Mcp-Secret
+      user-id: X-MiniAgent-Mcp-UserId

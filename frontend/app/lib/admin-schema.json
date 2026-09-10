@@ -1,0 +1,527 @@
+{
+  "advisor": [
+    {
+      "key": "advisorId",
+      "type": "string",
+      "required": true,
+      "label": "顾问标识"
+    },
+    {
+      "key": "advisorName",
+      "type": "string",
+      "required": true,
+      "label": "顾问名称"
+    },
+    {
+      "key": "advisorType",
+      "type": "string",
+      "required": true,
+      "label": "顾问类型"
+    },
+    {
+      "key": "advisorParam",
+      "type": "string",
+      "required": false,
+      "label": "顾问配置字符串"
+    }
+  ],
+  "agent": [
+    {
+      "key": "agentId",
+      "type": "string",
+      "required": true,
+      "label": "智能体标识"
+    },
+    {
+      "key": "agentName",
+      "type": "string",
+      "required": true,
+      "label": "智能体名称"
+    },
+    {
+      "key": "agentType",
+      "type": "string",
+      "required": true,
+      "label": "策略类型（step / loop / react）"
+    },
+    {
+      "key": "agentDesc",
+      "type": "string",
+      "required": true,
+      "label": "智能体职责描述"
+    },
+    {
+      "key": "modelId",
+      "type": "string",
+      "required": false,
+      "label": "模型配置标识；与 clientId 不同"
+    },
+    {
+      "key": "templateId",
+      "type": "string",
+      "required": false,
+      "label": "模板标识"
+    },
+    {
+      "key": "agentStatus",
+      "type": "number（整数）",
+      "required": true,
+      "label": "0 禁用 / 1 启用"
+    }
+  ],
+  "api": [
+    {
+      "key": "apiId",
+      "type": "string",
+      "required": true,
+      "label": "API 配置标识"
+    },
+    {
+      "key": "apiBaseUrl",
+      "type": "string",
+      "required": true,
+      "label": "模型服务基础地址"
+    },
+    {
+      "key": "apiKey",
+      "type": "string",
+      "required": true,
+      "label": "API 密钥；展示和日志中应脱敏"
+    },
+    {
+      "key": "apiCompletionsPath",
+      "type": "string",
+      "required": true,
+      "label": "对话路径（管理员字段，复数 Completions）"
+    },
+    {
+      "key": "apiEmbeddingsPath",
+      "type": "string",
+      "required": true,
+      "label": "嵌入路径"
+    }
+  ],
+  "client": [
+    {
+      "key": "clientId",
+      "type": "string",
+      "required": true,
+      "label": "客户端标识"
+    },
+    {
+      "key": "clientType",
+      "type": "string",
+      "required": true,
+      "label": "客户端类型"
+    },
+    {
+      "key": "clientRole",
+      "type": "string",
+      "required": true,
+      "label": "执行角色标识"
+    },
+    {
+      "key": "modelId",
+      "type": "string",
+      "required": true,
+      "label": "模型配置标识；与 clientId 不同"
+    },
+    {
+      "key": "modelName",
+      "type": "string",
+      "required": true,
+      "label": "模型名称"
+    },
+    {
+      "key": "clientName",
+      "type": "string",
+      "required": true,
+      "label": "客户端名称"
+    },
+    {
+      "key": "clientStatus",
+      "type": "number（整数）",
+      "required": true,
+      "label": "0 禁用 / 1 启用"
+    }
+  ],
+  "config": [
+    {
+      "key": "originClientId",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "originConfigType",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "originConfigValue",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "clientId",
+      "type": "string",
+      "required": true,
+      "label": "客户端标识"
+    },
+    {
+      "key": "configType",
+      "type": "string",
+      "required": true,
+      "label": "prompt / mcp / advisor"
+    },
+    {
+      "key": "configValue",
+      "type": "string",
+      "required": true,
+      "label": "关联配置标识"
+    },
+    {
+      "key": "configStatus",
+      "type": "number（整数）",
+      "required": true,
+      "label": "0 禁用 / 1 启用"
+    }
+  ],
+  "flow": [
+    {
+      "key": "originAgentId",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "originClientId",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "agentId",
+      "type": "string",
+      "required": true,
+      "label": "智能体标识"
+    },
+    {
+      "key": "clientId",
+      "type": "string",
+      "required": true,
+      "label": "客户端标识"
+    },
+    {
+      "key": "clientRole",
+      "type": "string",
+      "required": true,
+      "label": "执行角色标识"
+    },
+    {
+      "key": "userPrompt",
+      "type": "string",
+      "required": true,
+      "label": "用户提示词模板"
+    },
+    {
+      "key": "flowSeq",
+      "type": "number（整数）",
+      "required": true,
+      "min": "1",
+      "label": "执行顺序，从 1 开始"
+    }
+  ],
+  "mcp": [
+    {
+      "key": "mcpId",
+      "type": "string",
+      "required": true,
+      "label": "MCP 标识"
+    },
+    {
+      "key": "mcpName",
+      "type": "string",
+      "required": true,
+      "label": "MCP 名称"
+    },
+    {
+      "key": "mcpType",
+      "type": "string",
+      "required": true,
+      "label": "sse / stdio"
+    },
+    {
+      "key": "mcpDesc",
+      "type": "string",
+      "required": true,
+      "label": "MCP 描述"
+    },
+    {
+      "key": "mcpParam",
+      "type": "string",
+      "required": true,
+      "label": "配置的 JSON 字符串，格式见对接指南"
+    },
+    {
+      "key": "mcpSecret",
+      "type": "string",
+      "required": false,
+      "label": "MCP 凭据字符串；返回不保证脱敏"
+    },
+    {
+      "key": "mcpTimeout",
+      "type": "number（整数）",
+      "required": true,
+      "label": "MCP 请求超时配置"
+    }
+  ],
+  "model": [
+    {
+      "key": "modelId",
+      "type": "string",
+      "required": true,
+      "label": "模型配置标识；与 clientId 不同"
+    },
+    {
+      "key": "apiId",
+      "type": "string",
+      "required": true,
+      "label": "API 配置标识"
+    },
+    {
+      "key": "modelName",
+      "type": "string",
+      "required": true,
+      "label": "模型名称"
+    },
+    {
+      "key": "modelType",
+      "type": "string",
+      "required": true,
+      "label": "模型类型"
+    }
+  ],
+  "plaza": [
+    {
+      "key": "plazaId",
+      "type": "string",
+      "required": true,
+      "label": "广场条目标识"
+    },
+    {
+      "key": "templateId",
+      "type": "string",
+      "required": true,
+      "label": "模板标识"
+    },
+    {
+      "key": "userId",
+      "type": "number（整数）",
+      "required": true,
+      "label": "用户数值 ID"
+    },
+    {
+      "key": "agentName",
+      "type": "string",
+      "required": true,
+      "label": "智能体名称"
+    },
+    {
+      "key": "agentType",
+      "type": "string",
+      "required": true,
+      "label": "策略类型（step / loop / react）"
+    },
+    {
+      "key": "plazaTitle",
+      "type": "string",
+      "required": true,
+      "label": "发布标题"
+    },
+    {
+      "key": "plazaDesc",
+      "type": "string",
+      "required": true,
+      "label": "发布描述"
+    },
+    {
+      "key": "likeCount",
+      "type": "number（整数）",
+      "required": true,
+      "label": "点赞数"
+    },
+    {
+      "key": "favorCount",
+      "type": "number（整数）",
+      "required": true,
+      "label": "收藏数"
+    },
+    {
+      "key": "commentCount",
+      "type": "number（整数）",
+      "required": true,
+      "label": "评论数"
+    }
+  ],
+  "prompt": [
+    {
+      "key": "promptId",
+      "type": "string",
+      "required": true,
+      "label": "系统提示词标识"
+    },
+    {
+      "key": "promptName",
+      "type": "string",
+      "required": true,
+      "label": "提示词名称"
+    },
+    {
+      "key": "systenPrompt",
+      "type": "string",
+      "required": true,
+      "label": "后端写入字段的实际拼写（systen，不是 system）"
+    }
+  ],
+  "task": [
+    {
+      "key": "taskId",
+      "type": "string",
+      "required": true,
+      "label": "定时任务标识"
+    },
+    {
+      "key": "agentId",
+      "type": "string",
+      "required": true,
+      "label": "智能体标识"
+    },
+    {
+      "key": "taskCron",
+      "type": "string",
+      "required": true,
+      "label": "Spring 六字段 Cron"
+    },
+    {
+      "key": "taskDesc",
+      "type": "string",
+      "required": true,
+      "label": "定时任务描述"
+    },
+    {
+      "key": "taskParam",
+      "type": "string",
+      "required": true,
+      "label": "JSON 字符串，含 maxRetry/maxRound/maxPace/userMessage"
+    },
+    {
+      "key": "taskStatus",
+      "type": "number（整数）",
+      "required": true,
+      "label": "0 禁用 / 1 启用"
+    }
+  ],
+  "template": [
+    {
+      "key": "templateId",
+      "type": "string",
+      "required": true,
+      "label": "模板标识"
+    },
+    {
+      "key": "userId",
+      "type": "number（整数）",
+      "required": true,
+      "label": "用户数值 ID"
+    },
+    {
+      "key": "agentName",
+      "type": "string",
+      "required": true,
+      "label": "智能体名称"
+    },
+    {
+      "key": "agentType",
+      "type": "string",
+      "required": true,
+      "label": "策略类型（step / loop / react）"
+    },
+    {
+      "key": "agentDesc",
+      "type": "string",
+      "required": true,
+      "label": "智能体职责描述"
+    },
+    {
+      "key": "apiBaseUrl",
+      "type": "string",
+      "required": true,
+      "label": "模型服务基础地址"
+    },
+    {
+      "key": "apiCompletionUrl",
+      "type": "string",
+      "required": true,
+      "label": "对话地址字段（保持后端原名）"
+    },
+    {
+      "key": "modelName",
+      "type": "string",
+      "required": true,
+      "label": "模型名称"
+    },
+    {
+      "key": "modelType",
+      "type": "string",
+      "required": true,
+      "label": "模型类型"
+    },
+    {
+      "key": "snapshot",
+      "type": "string",
+      "required": true,
+      "label": "模板快照 JSON 字符串，原样保留"
+    }
+  ],
+  "user": [
+    {
+      "key": "originUserName",
+      "type": "string",
+      "required": false,
+      "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+    },
+    {
+      "key": "userName",
+      "type": "string",
+      "required": true,
+      "label": "用户名"
+    },
+    {
+      "key": "password",
+      "type": "string",
+      "required": true,
+      "label": "密码"
+    },
+    {
+      "key": "userRole",
+      "type": "string",
+      "required": true,
+      "label": "用户角色（user / admin）"
+    },
+    {
+      "key": "userAvatar",
+      "type": "string",
+      "required": true,
+      "label": "头像地址"
+    },
+    {
+      "key": "userStatus",
+      "type": "number（整数）",
+      "required": true,
+      "label": "0 禁用 / 1 启用"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiApiDao">
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiApi">
+        <id column="id" property="id"/>
+        <result column="api_id" property="apiId"/>
+        <result column="api_base_url" property="apiBaseUrl"/>
+        <result column="api_key" property="apiKey"/>
+        <result column="api_completions_path" property="apiCompletionsPath"/>
+        <result column="api_embeddings_path" property="apiEmbeddingsPath"/>
+        <result column="api_from" property="apiFrom"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByApiId" resultMap="dataMap">
+        SELECT id,
+               api_id,
+               api_base_url,
+               api_key,
+               api_completions_path,
+               api_embeddings_path,
+               api_from,
+               create_time,
+               update_time
+        FROM ai_api
+        WHERE api_id = #{apiId}
+    </select>
+
+    <select id="page" resultMap="dataMap">
+        SELECT id,
+               api_id,
+               api_base_url,
+               api_key,
+               api_completions_path,
+               api_embeddings_path,
+               api_from,
+               create_time,
+               update_time
+        FROM ai_api
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    api_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_base_url LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_completions_path LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_embeddings_path LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY update_time DESC, id DESC
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_api
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    api_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_base_url LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_completions_path LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_embeddings_path LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_api
+    </select>
+
+    <select id="listApiId" resultType="java.lang.String">
+        SELECT api_id
+        FROM ai_api
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiApi">
+        INSERT INTO ai_api (api_id,
+                            api_base_url,
+                            api_key,
+                            api_completions_path,
+                            api_embeddings_path,
+                            api_from)
+        VALUES (#{apiId},
+                #{apiBaseUrl},
+                #{apiKey},
+                #{apiCompletionsPath},
+                #{apiEmbeddingsPath},
+                #{apiFrom})
+    </insert>
+
+    <update id="update" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiApi">
+        UPDATE ai_api
+        <set>
+            <if test="apiId != null">api_id = #{apiId},</if>
+            <if test="apiBaseUrl != null">api_base_url = #{apiBaseUrl},</if>
+            <if test="apiKey != null">api_key = #{apiKey},</if>
+            <if test="apiCompletionsPath != null">api_completions_path = #{apiCompletionsPath},</if>
+            <if test="apiEmbeddingsPath != null">api_embeddings_path = #{apiEmbeddingsPath},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByApiId">
+        DELETE
+        FROM ai_api
+        WHERE api_id = #{apiId}
+    </delete>
+
+    <select id="listUserApi" resultType="com.zgl.zflow.infrastructure.persistent.po.AiApiModel">
+        SELECT
+        a.id AS id,
+        a.api_id AS apiId,
+        m.model_id AS modelId,
+        m.model_name AS modelName,
+        m.model_type AS modelType,
+        a.api_base_url AS apiBaseUrl,
+        a.api_key AS apiKey,
+        a.api_completions_path AS apiCompletionPath
+        FROM ai_api a
+        INNER JOIN ai_model m
+        ON m.api_id = a.api_id
+        WHERE m.model_from = #{userId} AND a.api_from = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND (
+            a.api_id LIKE CONCAT('%', #{keyword}, '%')
+            OR a.api_base_url LIKE CONCAT('%', #{keyword}, '%')
+            OR m.model_name LIKE CONCAT('%', #{keyword}, '%')
+            OR m.model_type LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY a.create_time DESC, a.id DESC
+    </select>
+
+</mapper>

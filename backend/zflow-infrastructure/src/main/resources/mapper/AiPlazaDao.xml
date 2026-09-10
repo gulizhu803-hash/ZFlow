@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiPlazaDao">
+
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiPlaza">
+        <id column="id" property="id"/>
+        <result column="plaza_id" property="plazaId"/>
+        <result column="template_id" property="templateId"/>
+        <result column="user_id" property="userId"/>
+        <result column="agent_name" property="agentName"/>
+        <result column="agent_type" property="agentType"/>
+        <result column="plaza_title" property="plazaTitle"/>
+        <result column="plaza_desc" property="plazaDesc"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="favor_count" property="favorCount"/>
+        <result column="comment_count" property="commentCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="page" resultMap="dataMap">
+        SELECT p.id,
+               p.plaza_id,
+               p.template_id,
+               p.user_id,
+               p.agent_name,
+               p.agent_type,
+               p.plaza_title,
+               p.plaza_desc,
+               p.like_count,
+               p.favor_count,
+               p.comment_count,
+               p.create_time,
+               p.update_time
+        FROM ai_plaza p
+                 LEFT JOIN ai_user u ON p.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                p.plaza_title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.plaza_desc LIKE CONCAT('%', #{keyword}, '%')
+                OR p.agent_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
+                OR p.agent_type LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        <choose>
+            <when test="sortBy == 'like'">
+                ORDER BY p.like_count
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                , p.id DESC
+            </when>
+            <when test="sortBy == 'favor'">
+                ORDER BY p.favor_count
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                , p.id DESC
+            </when>
+            <when test="sortBy == 'comment'">
+                ORDER BY p.comment_count
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                , p.id DESC
+            </when>
+            <otherwise>
+                ORDER BY p.create_time
+                <choose>
+                    <when test="sortOrder == 'asc'">ASC</when>
+                    <otherwise>DESC</otherwise>
+                </choose>
+                , p.id DESC
+            </otherwise>
+        </choose>
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_plaza p
+                 LEFT JOIN ai_user u ON p.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                p.plaza_title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.plaza_desc LIKE CONCAT('%', #{keyword}, '%')
+                OR p.agent_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
+                OR p.agent_type LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_plaza
+    </select>
+
+    <select id="queryByPlazaId" resultMap="dataMap">
+        SELECT p.id,
+               p.plaza_id,
+               p.template_id,
+               p.user_id,
+               p.agent_name,
+               p.agent_type,
+               p.plaza_title,
+               p.plaza_desc,
+               p.like_count,
+               p.favor_count,
+               p.comment_count,
+               p.create_time,
+               p.update_time
+        FROM ai_plaza p
+                 LEFT JOIN ai_user u ON p.user_id = u.id
+        WHERE p.plaza_id = #{plazaId}
+        LIMIT 1
+    </select>
+
+    <select id="queryByTemplateId" resultMap="dataMap">
+        SELECT p.id,
+               p.plaza_id,
+               p.template_id,
+               p.user_id,
+               p.agent_name,
+               p.agent_type,
+               p.plaza_title,
+               p.plaza_desc,
+               p.like_count,
+               p.favor_count,
+               p.comment_count,
+               p.create_time,
+               p.update_time
+        FROM ai_plaza p
+                 LEFT JOIN ai_user u ON p.user_id = u.id
+        WHERE p.template_id = #{templateId}
+        ORDER BY p.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="listByTemplateId" resultMap="dataMap">
+        SELECT p.id,
+               p.plaza_id,
+               p.template_id,
+               p.user_id,
+               p.agent_name,
+               p.agent_type,
+               p.plaza_title,
+               p.plaza_desc,
+               p.like_count,
+               p.favor_count,
+               p.comment_count,
+               p.create_time,
+               p.update_time
+        FROM ai_plaza p
+                 LEFT JOIN ai_user u ON p.user_id = u.id
+        WHERE p.template_id = #{templateId}
+        ORDER BY p.id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiPlaza">
+        INSERT INTO ai_plaza (plaza_id,
+                              template_id,
+                              user_id,
+                              agent_name,
+                              agent_type,
+                              plaza_title,
+                              plaza_desc,
+                              like_count,
+                              favor_count,
+                              comment_count)
+        VALUES (#{plazaId},
+                #{templateId},
+                #{userId},
+                #{agentName},
+                #{agentType},
+                #{plazaTitle},
+                #{plazaDesc},
+                #{likeCount},
+                #{favorCount},
+                #{commentCount})
+    </insert>
+
+    <update id="update" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiPlaza">
+        UPDATE ai_plaza
+        <set>
+            <if test="plazaId != null">plaza_id = #{plazaId},</if>
+            <if test="templateId != null">template_id = #{templateId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="agentName != null">agent_name = #{agentName},</if>
+            <if test="agentType != null">agent_type = #{agentType},</if>
+            <if test="plazaTitle != null">plaza_title = #{plazaTitle},</if>
+            <if test="plazaDesc != null">plaza_desc = #{plazaDesc},</if>
+            <if test="likeCount != null">like_count = #{likeCount},</if>
+            <if test="favorCount != null">favor_count = #{favorCount},</if>
+            <if test="commentCount != null">comment_count = #{commentCount},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="increaseLikeCount">
+        UPDATE ai_plaza
+        SET like_count = GREATEST(0, like_count + #{delta})
+        WHERE plaza_id = #{plazaId}
+    </update>
+
+    <update id="increaseFavorCount">
+        UPDATE ai_plaza
+        SET favor_count = GREATEST(0, favor_count + #{delta})
+        WHERE plaza_id = #{plazaId}
+    </update>
+
+    <update id="increaseCommentCount">
+        UPDATE ai_plaza
+        SET comment_count = GREATEST(0, comment_count + #{delta})
+        WHERE plaza_id = #{plazaId}
+    </update>
+
+    <delete id="deleteByPlazaId">
+        DELETE
+        FROM ai_plaza
+        WHERE plaza_id = #{plazaId}
+    </delete>
+
+    <delete id="deleteByTemplateId">
+        DELETE
+        FROM ai_plaza
+        WHERE template_id = #{templateId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,74 @@
+{
+  "time": "2026-09-10T09:31:15.612Z",
+  "root": "http://127.0.0.1:5180/miniagent/api/v1",
+  "passed": [
+    "proxy.health",
+    "auth.401",
+    "auth.login",
+    "auth.403",
+    "profile",
+    "validation.business-error",
+    "validation.session-type",
+    "chat.armory",
+    "chat.SSE-history-cleanup",
+    "rag.retrieval-SSE-history",
+    "agent.detail",
+    "work.SSE-complete-and-history"
+  ],
+  "success": true,
+  "configuration": {
+    "passed": [
+      "auth.401",
+      "auth.403",
+      "profile.read",
+      "validation.business-error",
+      "model.create-update-read",
+      "mcp.config-create-update-read",
+      "schedule.config-create-update-toggle",
+      "agent.five-update-endpoints",
+      "session.rename",
+      "temporary-configs.delete-and-confirm"
+    ]
+  },
+  "plaza": {
+    "passed": [
+      "plaza.publish-MQ",
+      "plaza.republish-same-template",
+      "plaza.template",
+      "plaza.like-MQ",
+      "plaza.dislike-MQ",
+      "plaza.favor-MQ",
+      "plaza.disfavor-MQ",
+      "plaza.comments-read",
+      "agent.fork-MQ",
+      "agent.delete-MQ",
+      "plaza.delete-MQ"
+    ]
+  },
+  "firstWorkExecution": {
+    "success": true,
+    "agentId": "agent_1_178990ZS",
+    "sessionId": "20260910170744_work_9f46d6c49d",
+    "events": 15,
+    "history": 2,
+    "stages": 14,
+    "answer": "本次任务已按照规划的各个步骤顺利完成，全部执行记录均显示为 SUCCESS: \n1. 已正确理解并提取原始文本信息: 小明有2本书，小红有3本书，人物及数量识别准确无误。\n2. 已将信息整理成清晰的中文结构化描述: “小明有2本书，小红有3本书”，未添加任何额外内容。\n3. 已根据整理后的信息进行简单加法计算: 2 + 3 = 5，得出两人一共拥有5本书，计算过程与结果正确。\n4. 已按用户要求，用一句中文给出最终答案: “小明和小红一共有5本书。”\n\n面向用户的最终回复: 小明和小红一共有5本书。"
+  },
+  "rag": {
+    "success": true,
+    "ragTag": "联调验证资料-20260910",
+    "answer": "根据你提供的知识库（DOCUMENTS）中的信息：\n\n-星河项目的内部校验编号为**BLUE-ORCHID-7429**。"
+  },
+  "browser": {
+    "login": true,
+    "chatAnswer": "页面与后端已连接成功。",
+    "workHistoryStages": 14,
+    "ragAnswerContains": "BLUE-ORCHID-7429"
+  },
+  "build": {
+    "frontendTests": 11,
+    "backendTests": 3,
+    "frontendBuild": true,
+    "backendPackage": true
+  }
+}

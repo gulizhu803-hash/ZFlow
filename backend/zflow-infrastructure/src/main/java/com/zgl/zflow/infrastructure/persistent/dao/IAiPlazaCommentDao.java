@@ -1,0 +1,31 @@
+package com.zgl.zflow.infrastructure.persistent.dao;
+
+import com.zgl.zflow.infrastructure.persistent.po.AiPlazaComment;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Set;
+
+@Mapper
+public interface IAiPlazaCommentDao {
+
+    List<AiPlazaComment> listByPlazaId(@Param("plazaId") String plazaId,
+                                       @Param("offset") Integer offset,
+                                       @Param("size") Integer size);
+
+    Integer countByPlazaIdAndUserId(@Param("plazaId") String plazaId, @Param("userId") Long userId);
+
+    Integer countByPlazaId(@Param("plazaId") String plazaId);
+
+    Set<String> queryCommentedByUserIdAndPlazaIdList(@Param("userId") Long userId, @Param("plazaIdList") List<String> plazaIdList);
+
+    AiPlazaComment queryByCommentId(@Param("commentId") String commentId);
+
+    Integer insert(AiPlazaComment aiPlazaComment);
+
+    Integer delete(@Param("commentId") String commentId, @Param("userId") Long userId);
+
+    Integer deleteByPlazaId(@Param("plazaId") String plazaId);
+
+}

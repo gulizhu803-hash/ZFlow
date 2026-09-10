@@ -1,0 +1,37 @@
+package com.zgl.zflow.domain.admin.model.dto;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class FlowManageDTO {
+
+    private String originAgentId;
+
+    private String originClientId;
+
+    @NotBlank
+    private String agentId;
+
+    @NotBlank
+    private String clientId;
+
+    @NotBlank
+    private String clientRole;
+
+    @NotBlank
+    private String userPrompt;
+
+    @NotNull
+    @Min(1)
+    private Integer flowSeq;
+
+}

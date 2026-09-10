@@ -1,0 +1,28 @@
+package com.zgl.zflow.domain.ai.service.armory.node;
+
+import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
+import com.zgl.zflow.domain.ai.model.entity.ArmoryRequestEntity;
+import com.zgl.zflow.domain.ai.service.armory.ArmoryContext;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+public class ArmoryRootNode extends AbstractArmoryNode {
+
+    @Resource
+    private ArmoryApiNode armoryApiNode;
+
+    @Override
+    protected String doApply(ArmoryRequestEntity armoryRequestEntity, ArmoryContext armoryContext) throws Exception {
+        log.info("【装配节点】ArmoryRootNode：armoryType={}, armoryIdSet={}", armoryRequestEntity.getArmoryType(), armoryRequestEntity.getArmoryIdSet());
+        return router(armoryRequestEntity, armoryContext);
+    }
+
+    @Override
+    public StrategyHandler<ArmoryRequestEntity, ArmoryContext, String> get(ArmoryRequestEntity armoryRequestEntity, ArmoryContext armoryContext) {
+        return armoryApiNode;
+    }
+
+}

@@ -1,0 +1,365 @@
+package com.zgl.zflow.trigger.controller;
+
+import com.zgl.zflow.api.IAiApi;
+import com.zgl.zflow.domain.ai.model.dto.AiChatDTO;
+import com.zgl.zflow.domain.ai.model.entity.ExecuteRequestEntity;
+import com.zgl.zflow.domain.ai.service.augment.IAugmentService;
+import com.zgl.zflow.domain.ai.service.dispatch.IDispatchService;
+import com.zgl.zflow.domain.ai.service.execute.MatchChecker;
+import com.zgl.zflow.domain.ai.service.rag.IRagService;
+import com.zgl.zflow.domain.user.service.query.IQueryService;
+import com.zgl.zflow.domain.session.model.enumeration.SessionType;
+import com.zgl.zflow.domain.session.service.ISessionService;
+import com.zgl.zflow.domain.util.persist.IPersistUtil;
+import com.zgl.zflow.domain.util.stat.IStatUtil;
+import com.zgl.zflow.domain.user.model.vo.QueryChatClientVO;
+import com.zgl.zflow.domain.user.model.vo.QueryWorkAgentVO;
+import com.zgl.zflow.domain.ai.model.dto.AiArmoryDTO;
+import com.zgl.zflow.domain.ai.model.dto.AiWorkDTO;
+import com.zgl.zflow.domain.ai.model.dto.AiUploadDTO;
+import com.zgl.zflow.types.result.Result;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.context.ApplicationContext;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static com.zgl.zflow.domain.ai.model.enumeration.AiType.CLIENT;
+import static com.zgl.zflow.types.constant.ChatConstant.*;
+
+@Slf4j
+@RestController
+@RequestMapping("/ai")
+public class AiController implements IAiApi {
+
+    @Resource
+    private ApplicationContext applicationContext;
+
+    @Resource
+    private IDispatchService dispatchService;
+
+    @Resource
+    private IAugmentService augmentService;
+
+    @Resource
+    private IRagService ragService;
+
+    @Resource
+    private IQueryService queryService;
+
+    @Resource
+    private ISessionService sessionService;
+
+    @Resource
+    private IPersistUtil persistUtil;
+
+    @Resource
+    private IStatUtil statUtil;
+
+    @Resource
+    private MatchChecker matchChecker;
+
+    @Override
+    @PostMapping(value = "/work/execute", produces = "text/event-stream")
+    public SseEmitter execute(@Valid @RequestBody AiWorkDTO aiWorkDTO) {
+
+        String sessionId = aiWorkDTO.getSessionId();
+        String userMessage = aiWorkDTO.getUserMessage();
+        SseEmitter sseEmitter = new SseEmitter(0L);
+        String agentId = aiWorkDTO.getAgentId();
+        String agentDesc = aiWorkDTO.getAgentDesc();
+
+        try {
+            if (isInactiveWorkAgent(agentId)) {
+                try {
+                    sseEmitter.send(SseEmitter.event()
+                            .name("error")
+                            .data("AI 未启用或不存在"));
+                } catch (Exception e) {
+                    log.error("【AI 执行】状态校验失败：aiWorkDTO={}", aiWorkDTO, e);
+                } finally {
+                    sseEmitter.complete();
+                }
+                return sseEmitter;
+            }
+
+            String invalidSessionReason = sessionService.validateSessionAccess(sessionId, SessionType.WORK.getType());
+            if (StringUtils.hasText(invalidSessionReason)) {
+                try {
+                    sseEmitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(invalidSessionReason));
+                } catch (Exception e) {
+                    log.error("【AI 执行】会话校验失败：aiWorkDTO={}", aiWorkDTO, e);
+                } finally {
+                    sseEmitter.complete();
+                }
+                return sseEmitter;
+            }
+
+            if (!matchChecker.isTaskMatched(agentDesc, userMessage)) {
+                try {
+                    sseEmitter.send(SseEmitter.event()
+                            .name("error")
+                            .data("当前任务需求与智能体定位不匹配，请更换智能体或调整需求"));
+                } catch (Exception e) {
+                    log.error("【AI 执行】匹配校验失败：aiWorkDTO={}", aiWorkDTO, e);
+                } finally {
+                    sseEmitter.complete();
+                }
+                return sseEmitter;
+            }
+
+            ExecuteRequestEntity executeRequestEntity = ExecuteRequestEntity.builder()
+                    .agentId(agentId)
+                    .userMessage(userMessage)
+                    .sessionId(aiWorkDTO.getSessionId())
+                    .maxRound(aiWorkDTO.getMaxRound())
+                    .maxRetry(aiWorkDTO.getMaxRetry())
+                    .maxPace(aiWorkDTO.getMaxPace())
+                    .build();
+
+            dispatchService.dispatchExecuteStrategy(executeRequestEntity, sseEmitter);
+            return sseEmitter;
+        } finally {
+            try {
+                persistUtil.saveWorkUserMessage(sessionId, userMessage);
+            } catch (Exception e) {
+                log.error("【AI 执行】持久化消息失败：sessionId={}", sessionId, e);
+            }
+            try {
+                statUtil.recordWorkUsage(agentId);
+            } catch (Exception e) {
+                log.error("【AI 执行】记录统计失败：agentId={}", agentId, e);
+            }
+
+        }
+    }
+
+    @PostMapping("/chat/complete")
+    @Override
+    public String complete(@Valid @RequestBody AiChatDTO aiChatDTO) {
+
+        String clientId = aiChatDTO.getClientId();
+        if (isInactiveChatClient(clientId)) {
+            log.error("【AI 对话】client 未启用或不存在：clientId={}", clientId);
+            return CHAT_ERROR_RESPONSE;
+        }
+
+        String userMessage = aiChatDTO.getUserMessage();
+        String ragTag = aiChatDTO.getRagTag();
+        String sessionId = aiChatDTO.getSessionId();
+        String invalidSessionReason = sessionService.validateSessionAccess(sessionId, SessionType.CHAT.getType());
+        if (StringUtils.hasText(invalidSessionReason)) {
+            log.error("【AI 对话】会话校验失败：sessionId={}, expectedType={}, reason={}", sessionId, SessionType.CHAT.getType(), invalidSessionReason);
+            return invalidSessionReason;
+        }
+        List<String> mcpIdList = aiChatDTO.getMcpIdList();
+        Double temperature = aiChatDTO.getTemperature();
+        Double presencePenalty = aiChatDTO.getPresencePenalty();
+        Integer maxCompletionTokens = aiChatDTO.getMaxCompletionTokens();
+
+        log.info("【AI 对话】完整对话开始：aiChatDTO={}", aiChatDTO);
+        String response = null;
+
+        try {
+            ChatClient chatClient = applicationContext.getBean(CLIENT.getBeanName(clientId), ChatClient.class);
+            List<Message> messageList = augmentService.augmentRagMessage(userMessage, ragTag);
+            SyncMcpToolCallbackProvider toolCallbackList = augmentService.augmentMcpTool(mcpIdList);
+            ChatOptions chatOptions = OpenAiChatOptions.builder()
+                    .temperature(temperature)
+                    .presencePenalty(presencePenalty)
+                    .maxCompletionTokens(maxCompletionTokens)
+                    .build();
+
+            response = chatClient.prompt()
+                    .advisors(a -> a
+                            .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE_CHAT)
+                    )
+                    .messages(messageList)
+                    .options(chatOptions)
+                    .toolCallbacks(toolCallbackList)
+                    .call()
+                    .content();
+            if (response == null || response.isEmpty()) {
+                return CHAT_ERROR_RESPONSE;
+            }
+
+            return response;
+        } catch (Exception e) {
+            log.error("【AI 对话】完整对话失败：clientId={}", clientId, e);
+            return CHAT_ERROR_RESPONSE;
+        } finally {
+            try {
+                persistUtil.saveChatUserMessage(sessionId, userMessage);
+            } catch (Exception e) {
+                log.error("【AI 对话】持久化用户消息失败：sessionId={}", sessionId, e);
+            }
+            if (StringUtils.hasText(response) && !CHAT_ERROR_RESPONSE.equals(response)) {
+                try {
+                    persistUtil.saveChatAssistantMessage(sessionId, response);
+                } catch (Exception e) {
+                    log.error("【AI 对话】持久化助手消息失败：sessionId={}", sessionId, e);
+                }
+            }
+            try {
+                statUtil.recordChatUsage(clientId, mcpIdList);
+            } catch (Exception e) {
+                log.error("【AI 对话】记录统计失败：clientId={}", clientId, e);
+            }
+        }
+    }
+
+    @PostMapping("/chat/stream")
+    @Override
+    public Flux<String> stream(@Valid @RequestBody AiChatDTO aiChatDTO) {
+
+        String clientId = aiChatDTO.getClientId();
+        if (isInactiveChatClient(clientId)) {
+            log.error("【AI 对话】client 未启用或不存在：clientId={}", clientId);
+            return Flux.just(CHAT_ERROR_RESPONSE);
+        }
+
+        String userMessage = aiChatDTO.getUserMessage();
+        String ragTag = aiChatDTO.getRagTag();
+        String sessionId = aiChatDTO.getSessionId();
+        String invalidSessionReason = sessionService.validateSessionAccess(sessionId, SessionType.CHAT.getType());
+        if (StringUtils.hasText(invalidSessionReason)) {
+            log.error("【AI 对话】会话校验失败：sessionId={}, expectedType={}, reason={}", sessionId, SessionType.CHAT.getType(), invalidSessionReason);
+            return Flux.just(invalidSessionReason);
+        }
+        List<String> mcpIdList = aiChatDTO.getMcpIdList();
+        Double temperature = aiChatDTO.getTemperature();
+        Double presencePenalty = aiChatDTO.getPresencePenalty();
+        Integer maxCompletionTokens = aiChatDTO.getMaxCompletionTokens();
+
+        log.info("【AI 对话】流式对话开始：aiChatDTO={}", aiChatDTO);
+
+        try {
+            ChatClient chatClient = applicationContext.getBean(CLIENT.getBeanName(clientId), ChatClient.class);
+            List<Message> messageList = augmentService.augmentRagMessage(userMessage, ragTag);
+            SyncMcpToolCallbackProvider toolCallbackList = augmentService.augmentMcpTool(mcpIdList);
+            ChatOptions chatOptions = OpenAiChatOptions.builder()
+                    .temperature(temperature)
+                    .presencePenalty(presencePenalty)
+                    .maxCompletionTokens(maxCompletionTokens)
+                    .build();
+            StringBuilder answerBuffer = new StringBuilder();
+            return chatClient
+                    .prompt()
+                    .advisors(a -> a
+                            .param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE_CHAT)
+                    )
+                    .messages(messageList)
+                    .options(chatOptions)
+                    .toolCallbacks(toolCallbackList)
+                    .stream()
+                    .content()
+                    .doOnNext(answerBuffer::append)
+                    .doFinally(signalType -> {
+                        if (answerBuffer.isEmpty()) {
+                            return;
+                        }
+                        try {
+                            persistUtil.saveChatAssistantMessage(sessionId, answerBuffer.toString());
+                        } catch (Exception e) {
+                            log.error("【AI 对话】持久化消息失败", e);
+                        }
+                    })
+                    .doFinally(signalType -> log.info("【AI 对话】流式对话结束：clientId={}, signal={}", clientId, signalType))
+                    .onErrorResume(e -> Flux.just(CHAT_ERROR_RESPONSE));
+        } catch (Exception e) {
+            log.error("【AI 对话】流式对话失败：clientId={}", clientId, e);
+            return Flux.just(CHAT_ERROR_RESPONSE);
+        } finally {
+            try {
+                persistUtil.saveChatUserMessage(sessionId, userMessage);
+            } catch (Exception e) {
+                log.error("【AI 对话】持久化用户消息失败：sessionId={}", sessionId, e);
+            }
+            try {
+                statUtil.recordChatUsage(clientId, mcpIdList);
+            } catch (Exception e) {
+                log.error("【AI 对话】记录统计失败：clientId={}", clientId, e);
+            }
+        }
+    }
+
+
+    @Override
+    @PostMapping(value = "/armory")
+    public Result<Void> armory(@Valid @RequestBody AiArmoryDTO aiArmoryDTO) {
+
+        String armoryType = aiArmoryDTO.getArmoryType();
+        String armoryId = aiArmoryDTO.getArmoryId();
+
+        Set<String> armoryIdSet = new HashSet<>(Set.of(armoryId));
+        dispatchService.dispatchArmoryStrategy(armoryType, armoryIdSet);
+
+        return Result.success();
+    }
+
+
+    @PostMapping(value = "/rag/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Override
+    public Result<Void> uploadFile(@RequestPart("ragTag") String ragTag, @RequestPart("fileList") List<MultipartFile> fileList) {
+        try {
+            ragService.uploadTextFile(ragTag, fileList);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("【上传知识库】文件上传失败：ragTag={}", ragTag, e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/rag/git")
+    @Override
+    public Result<Void> uploadGitRepo(@RequestBody AiUploadDTO aiUploadDTO) {
+        try {
+            ragService.uploadGitRepo(aiUploadDTO);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("【上传知识库】Git 上传失败：repoUrl={}", aiUploadDTO.getRepoUrl(), e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    private boolean isInactiveChatClient(String clientId) {
+        if (clientId == null || clientId.isBlank()) {
+            return true;
+        }
+        List<QueryChatClientVO> list = queryService.queryChatClientList();
+        if (list == null || list.isEmpty()) {
+            return true;
+        }
+        return list.stream().noneMatch(item -> clientId.equals(item.getClientId()));
+    }
+
+    private boolean isInactiveWorkAgent(String agentId) {
+        if (agentId == null || agentId.isBlank()) {
+            return true;
+        }
+        List<QueryWorkAgentVO> list = queryService.queryWorkAgentList();
+        if (list == null || list.isEmpty()) {
+            return true;
+        }
+        return list.stream().noneMatch(item -> agentId.equals(item.getAgentId()));
+    }
+
+}

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiModelDao">
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiModel">
+        <id column="id" property="id"/>
+        <result column="model_id" property="modelId"/>
+        <result column="api_id" property="apiId"/>
+        <result column="model_name" property="modelName"/>
+        <result column="model_type" property="modelType"/>
+        <result column="model_from" property="modelFrom"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByModelId" parameterType="java.lang.String" resultMap="dataMap">
+        SELECT id,
+               model_id,
+               api_id,
+               model_name,
+               model_type,
+               model_from,
+               create_time,
+               update_time
+        FROM ai_model
+        WHERE model_id = #{modelId}
+    </select>
+
+    <select id="page" resultMap="dataMap">
+        SELECT id,
+               model_id,
+               api_id,
+               model_name,
+               model_type,
+               model_from,
+               create_time,
+               update_time
+        FROM ai_model
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    model_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR model_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR model_type LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_id LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="apiId != null and apiId != ''">
+                AND api_id = #{apiId}
+            </if>
+        </where>
+        ORDER BY update_time DESC, id DESC
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_model
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    model_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR model_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR model_type LIKE CONCAT('%', #{keyword}, '%')
+                    OR api_id LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="apiId != null and apiId != ''">
+                AND api_id = #{apiId}
+            </if>
+        </where>
+    </select>
+
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_model
+    </select>
+
+    <select id="queryModelIdByApiId" resultType="java.lang.String">
+        SELECT model_id
+        FROM ai_model
+        WHERE api_id = #{apiId}
+    </select>
+
+    <select id="listModelId" resultType="java.lang.String">
+        SELECT model_id
+        FROM ai_model
+    </select>
+
+    <select id="queryModelByUserId" resultMap="dataMap">
+        SELECT id,
+               model_id,
+               api_id,
+               model_name,
+               model_type,
+               model_from,
+               create_time,
+               update_time
+        FROM ai_model
+        WHERE model_from = #{userId}
+    </select>
+
+    <select id="queryByApiId" resultMap="dataMap">
+        SELECT id,
+               model_id,
+               api_id,
+               model_name,
+               model_type,
+               model_from,
+               create_time,
+               update_time
+        FROM ai_model
+        WHERE api_id = #{apiId}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiModel">
+        INSERT INTO ai_model (model_id,
+                              api_id,
+                              model_name,
+                              model_type,
+                              model_from)
+        VALUES (#{modelId},
+                #{apiId},
+                #{modelName},
+                #{modelType},
+                #{modelFrom})
+    </insert>
+
+    <update id="update" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiModel">
+        UPDATE ai_model
+        <set>
+            <if test="modelId != null">model_id = #{modelId},</if>
+            <if test="apiId != null">api_id = #{apiId},</if>
+            <if test="modelName != null">model_name = #{modelName},</if>
+            <if test="modelType != null">model_type = #{modelType},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByModelId">
+        DELETE
+        FROM ai_model
+        WHERE model_id = #{modelId}
+    </delete>
+</mapper>

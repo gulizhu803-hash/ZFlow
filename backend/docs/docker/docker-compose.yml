@@ -1,0 +1,284 @@
+name: miniagent
+
+services:
+  backend:
+    build:
+      context: ../..
+    image: miniagent-backend:local
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: 8066
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: ${MINIAGENT_USER}
+      MYSQL_PASSWORD: ${PASSWORD}
+      MYSQL_DB_NAME: ai-agent
+      MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: "true"
+      POSTGRESQL_HOST: pgvector
+      POSTGRESQL_PORT: 5432
+      POSTGRESQL_USERNAME: ${MINIAGENT_USER}
+      POSTGRESQL_PASSWORD: ${PASSWORD}
+      POSTGRESQL_DB_NAME: ai-agent
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
+      REDIS_PASSWORD: ${PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${MINIAGENT_USER}
+      RABBITMQ_PASSWORD: ${PASSWORD}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-not-configured}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v4}
+      EMBEDDING_DIMENSIONS: 1024
+      EMBEDDING_SCHEMA_NAME: public
+      EMBEDDING_TABLE_NAME: vector_store_openai
+      SYSTEM_MODEL_BASE_URL: ${SYSTEM_MODEL_BASE_URL:-https://api.openai.com}
+      SYSTEM_MODEL_API_KEY: ${SYSTEM_MODEL_API_KEY:-not-configured}
+      SYSTEM_MODEL_NAME: ${SYSTEM_MODEL_NAME:-gpt-4o-mini}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: miniagent
+      ZFLOW_WEB_ALLOWED_ORIGIN_PATTERNS: ${ZFLOW_WEB_ALLOWED_ORIGIN_PATTERNS:-http://localhost:*,http://127.0.0.1:*}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-oss-cn-hangzhou.aliyuncs.com}
+      OSS_BUCKET: ${OSS_BUCKET:-not-configured}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-not-configured}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET:-not-configured}
+      TZ: ${TZ:-Asia/Shanghai}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      pgvector:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8066/miniagent/api/v1/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks:
+      - ai-agent
+
+  frontend:
+    build:
+      context: ../../../frontend
+    image: miniagent-frontend:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-18080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai-agent
+
+  # ===================== MySQL =====================
+  mysql:
+    image: mysql:8.0.40
+    # Windows bind mounts can look world-writable; MySQL ignores such config files.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cp /tmp/miniagent-my.cnf /etc/mysql/conf.d/miniagent.cnf
+        chmod 0644 /etc/mysql/conf.d/miniagent.cnf
+        exec docker-entrypoint.sh mysqld
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-13306}:3306"
+    environment:
+      MYSQL_DATABASE: ai-agent
+      MYSQL_USER: ${MINIAGENT_USER}
+      MYSQL_PASSWORD: ${PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./conf/my.cnf:/tmp/miniagent-my.cnf:ro
+      - ../mysql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../mysql/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_ROOT_PASSWORD}\" mysql --protocol=tcp -h 127.0.0.1 -uroot -D ai-agent -e 'SELECT 1 FROM ai_advisor LIMIT 1' >/dev/null"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - ai-agent
+
+  # ===================== Redis =====================
+  redis:
+    image: redis:8.0.1
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-16380}:6379"
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${PASSWORD}
+    volumes:
+      - redis_data:/data
+      - ./conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${PASSWORD}", "ping" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - ai-agent
+
+  # ===================== PostgreSQL =====================
+  pgvector:
+    image: pgvector/pgvector:0.7.4-pg16
+    restart: unless-stopped
+    ports:
+      - "${POSTGRESQL_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ai-agent
+      POSTGRES_USER: ${MINIAGENT_USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./conf/table.sql:/docker-entrypoint-initdb.d/table.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h localhost -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - ai-agent
+
+  # ===================== RabbitMQ =====================
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${MINIAGENT_USER}
+      RABBITMQ_DEFAULT_PASS: ${PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - ai-agent
+
+  # ===================== One-API =====================
+  one-api:
+    profiles: ["oneapi"]
+    image: justsong/one-api:v0.6.11-preview.7
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "${ONEAPI_PORT:-3000}:3000"
+    environment:
+      SQL_DSN: ${MINIAGENT_USER}:${PASSWORD}@tcp(mysql:3306)/oneapi?charset=utf8mb4&parseTime=True&loc=Local
+      TZ: ${TZ}
+    volumes:
+      - oneapi_data:/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ai-agent
+
+  # ===================== MCP Servers =====================
+  # Local image tags are never pulled; missing images are built from source.
+  mcp-server-csdn:
+    profiles: ["mcp"]
+    build:
+      context: ../../../mcp/mcp-server-csdn
+    image: zflow-mcp-server-csdn:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "9001:9001"
+    networks:
+      - ai-agent
+
+  mcp-server-wecom:
+    profiles: ["mcp"]
+    build:
+      context: ../../../mcp/mcp-server-wecom
+    image: zflow-mcp-server-wecom:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "9002:9002"
+    networks:
+      - ai-agent
+
+  mcp-server-amap:
+    profiles: ["mcp"]
+    build:
+      context: ../../../mcp/mcp-server-amap
+    image: zflow-mcp-server-amap:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "9003:9003"
+    networks:
+      - ai-agent
+
+  mcp-server-email:
+    profiles: ["mcp"]
+    build:
+      context: ../../../mcp/mcp-server-email
+    image: zflow-mcp-server-email:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "9004:9004"
+    networks:
+      - ai-agent
+      
+  mcp-server-bocha:
+    profiles: ["mcp"]
+    build:
+      context: ../../../mcp/mcp-server-bocha
+    image: zflow-mcp-server-bocha:local
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "9005:9005"
+    networks:
+      - ai-agent
+
+volumes:
+  pgvector_data:
+  mysql_data:
+  redis_data:
+  oneapi_data:
+  rabbitmq_data:
+
+networks:
+  ai-agent:
+    driver: bridge

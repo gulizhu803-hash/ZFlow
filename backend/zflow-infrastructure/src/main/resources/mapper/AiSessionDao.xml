@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiSessionDao">
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiSession">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="session_title" property="sessionTitle"/>
+        <result column="session_type" property="sessionType"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByUserId" resultMap="dataMap">
+        SELECT id,
+               session_id,
+               user_id,
+               session_title,
+               session_type,
+               create_time,
+               update_time
+        FROM ai_session
+        WHERE user_id = #{userId}
+        ORDER BY update_time DESC, id DESC
+    </select>
+
+    <select id="queryAll" resultMap="dataMap">
+        SELECT id,
+               session_id,
+               user_id,
+               session_title,
+               session_type,
+               create_time,
+               update_time
+        FROM ai_session
+        ORDER BY update_time DESC, id DESC
+    </select>
+
+    <select id="queryBySessionId" resultMap="dataMap">
+        SELECT id,
+               session_id,
+               user_id,
+               session_title,
+               session_type,
+               create_time,
+               update_time
+        FROM ai_session
+        WHERE session_id = #{sessionId}
+    </select>
+
+    <select id="countByUserIdAndType" resultType="int">
+        SELECT COUNT(1)
+        FROM ai_session
+        WHERE user_id = #{userId}
+          AND session_type = #{sessionType}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(1)
+        FROM ai_session
+    </select>
+
+    <select id="countByType" resultType="int">
+        SELECT COUNT(1)
+        FROM ai_session
+        WHERE session_type = #{sessionType}
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_session (session_id, user_id, session_title, session_type)
+        VALUES (#{sessionId}, #{userId}, #{sessionTitle}, #{sessionType})
+    </insert>
+
+    <update id="updateTitle">
+        UPDATE ai_session
+        SET session_title = #{sessionTitle}
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM ai_session
+        WHERE session_id = #{sessionId}
+    </delete>
+</mapper>

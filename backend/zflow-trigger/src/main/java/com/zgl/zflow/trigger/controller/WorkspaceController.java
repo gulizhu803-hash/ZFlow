@@ -1,0 +1,148 @@
+package com.zgl.zflow.trigger.controller;
+
+import com.zgl.zflow.domain.workspace.model.dto.*;
+import com.zgl.zflow.domain.workspace.model.vo.*;
+import com.zgl.zflow.domain.workspace.service.IWorkspaceService;
+import com.zgl.zflow.types.result.PageResult;
+import com.zgl.zflow.types.result.Result;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@RestController
+@RequestMapping("/workspace")
+public class WorkspaceController {
+
+    @Resource
+    private IWorkspaceService workspaceService;
+
+    @PostMapping("/plaza/page")
+    public Result<PageResult<PlazaVO>> plazaPage(@Valid @RequestBody PlazaPageDTO dto) {
+        return Result.success(workspaceService.pagePlaza(dto));
+    }
+
+    @PostMapping("/plaza/like")
+    public Result<Void> plazaLike(@NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaLike(plazaId, true);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/dislike")
+    public Result<Void> plazaDislike(@NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaLike(plazaId, false);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/comment")
+    public Result<Void> plazaComment(@Valid @RequestBody PlazaCommentDTO dto) {
+        workspaceService.plazaComment(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/discomment")
+    public Result<Void> plazaDiscomment(@NotBlank @RequestParam String commentId,
+                                        @NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaDiscomment(plazaId, commentId);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/comment-area")
+    public Result<PageResult<CommentVO>> plazaCommentArea(@Valid @RequestBody PlazaCommentAreaDTO dto) {
+        return Result.success(workspaceService.plazaCommentArea(dto));
+    }
+
+    @PostMapping("/plaza/favor")
+    public Result<Void> plazaFavor(@NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaFavor(plazaId, true);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/disfavor")
+    public Result<Void> plazaDisfavor(@NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaFavor(plazaId, false);
+        return Result.success();
+    }
+
+    @PostMapping("/plaza/delete")
+    public Result<Void> plazaDelete(@NotBlank @RequestParam String plazaId) {
+        workspaceService.plazaDelete(plazaId);
+        return Result.success();
+    }
+
+    @PostMapping("/repo/map")
+    public Result<Map<String, List<RepoVO>>> repoMap() {
+        return Result.success(workspaceService.repoMap());
+    }
+
+    @PostMapping("/agent/publish")
+    public Result<Void> agentPublish(@Valid @RequestBody AgentPublishDTO dto) {
+        workspaceService.agentPublish(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/template")
+    public Result<TemplateVO> agentTemplate(@NotBlank @RequestParam String templateId) {
+        return Result.success(workspaceService.agentTemplate(templateId));
+    }
+
+    @PostMapping("/agent/detail")
+    public Result<AgentVO> agentDetail(@NotBlank @RequestParam String agentId) {
+        return Result.success(workspaceService.agentDetail(agentId));
+    }
+
+    @PostMapping("/agent/update/model")
+    public Result<Void> agentUpdateModel(@Valid @RequestBody AgentUpdateModelDTO dto) {
+        workspaceService.agentUpdateModel(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/update/mcp")
+    public Result<Void> agentUpdateMcp(@Valid @RequestBody AgentUpdateMcpDTO dto) {
+        workspaceService.agentUpdateMcp(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/update/base")
+    public Result<Void> agentUpdateBase(@Valid @RequestBody AgentUpdateBaseDTO dto) {
+        workspaceService.agentUpdateBase(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/update/userprompt")
+    public Result<Void> agentUpdateUserPrompt(@Valid @RequestBody AgentUpdateUserPromptDTO dto) {
+        workspaceService.agentUpdateUserPrompt(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/update/systemprompt")
+    public Result<Void> agentUpdateSystemPrompt(@Valid @RequestBody AgentUpdateSystemPromptDTO dto) {
+        workspaceService.agentUpdateSystemPrompt(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/fork")
+    public Result<Void> agentFork(@NotBlank @RequestParam String templateId) {
+        workspaceService.agentFork(templateId);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/create")
+    public Result<Void> agentCreate(@Valid @RequestBody AgentCreateDTO dto) {
+        workspaceService.agentCreate(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/agent/delete")
+    public Result<Void> agentDelete(@NotBlank @RequestParam String agentId) {
+        workspaceService.agentDelete(agentId);
+        return Result.success();
+    }
+
+}
+

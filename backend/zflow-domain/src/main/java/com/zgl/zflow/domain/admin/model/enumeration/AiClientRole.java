@@ -1,0 +1,30 @@
+package com.zgl.zflow.domain.admin.model.enumeration;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+public enum AiClientRole {
+
+    ANALYZER("任务分析专家", "analyzer"),
+    PERFORMER("任务执行专家", "performer"),
+    SUPERVISOR("任务监督专家", "supervisor"),
+    SUMMARIZER("任务总结专家", "summarizer"),
+    INSPECTOR("任务审查专家", "inspector"),
+    PLANNER("任务规划专家", "planner"),
+    RUNNER("任务运行专家", "runner"),
+    REPLIER("任务回复专家", "replier"),
+    OBSERVER("任务观察专家", "observer"),
+    REASONER("任务推理专家", "reasoner"),
+    ACTOR("任务行动专家", "actor"),
+    EVALUATOR("任务评估专家", "evaluator"),
+    ;
+
+    private String name;
+
+    private String role;
+
+}

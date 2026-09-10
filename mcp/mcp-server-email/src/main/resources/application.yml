@@ -1,0 +1,30 @@
+server:
+  port: 9004
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
+logging:
+  level:
+    root: info
+    org.springframework.ai.mcp: debug
+    io.modelcontextprotocol: debug
+  config: classpath:logback-spring.xml
+
+spring:
+  application:
+    name: mcp-server-email
+
+  ai:
+    mcp:
+      server:
+        name: mcp-server-email
+        version: 1.0.0
+
+miniagent:
+  mcp:
+    header:
+      secret: X-MiniAgent-Mcp-Secret
+      user-id: X-MiniAgent-Mcp-UserId

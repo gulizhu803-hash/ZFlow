@@ -1,0 +1,84 @@
+package com.zgl.zflow.infrastructure.util;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.zgl.zflow.domain.util.jwt.JwtProperties;
+import com.zgl.zflow.domain.user.model.vo.UserVO;
+import com.zgl.zflow.domain.util.jwt.IJwtUtil;
+import com.zgl.zflow.types.exception.MissingException;
+import jakarta.annotation.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.util.Date;
+
+import static com.zgl.zflow.types.constant.ExceptionMessage.JWT_TOKEN_CLAIM_MISSING;
+import static com.zgl.zflow.types.constant.ExceptionMessage.JWT_TOKEN_MISSING;
+import static com.zgl.zflow.types.constant.ExceptionMessage.JWT_USER_INFO_MISSING;
+
+@Service
+public class JwtUtil implements IJwtUtil {
+
+    private static final String CLAIM_USER_ID = "userId";
+    private static final String CLAIM_USER_NAME = "userName";
+    private static final String CLAIM_USER_ROLE = "userRole";
+
+    @Resource
+    private JwtProperties jwtProperties;
+
+    @Override
+    public String generateToken(UserVO userVO) {
+        if (userVO == null || userVO.getUserId() == null) {
+            throw new MissingException(JWT_USER_INFO_MISSING);
+        }
+
+        Date now = new Date();
+        long expireMillis = jwtProperties.getExpireSeconds() * 1000;
+        Date expireAt = new Date(now.getTime() + expireMillis);
+
+        return JWT.create()
+                .withIssuer(jwtProperties.getIssuer())
+                .withIssuedAt(now)
+                .withExpiresAt(expireAt)
+                .withClaim(CLAIM_USER_ID, userVO.getUserId())
+                .withClaim(CLAIM_USER_NAME, userVO.getUserName())
+                .withClaim(CLAIM_USER_ROLE, userVO.getUserRole())
+                .sign(getAlgorithm());
+    }
+
+    @Override
+    public DecodedJWT verifyToken(String token) {
+        if (!StringUtils.hasText(token)) {
+            throw new MissingException(JWT_TOKEN_MISSING);
+        }
+
+        JWTVerifier verifier = JWT.require(getAlgorithm())
+                .withIssuer(jwtProperties.getIssuer())
+                .build();
+
+        return verifier.verify(token);
+    }
+
+    @Override
+    public UserVO parseToken(String token) {
+        DecodedJWT jwt = verifyToken(token);
+        Long userId = jwt.getClaim(CLAIM_USER_ID).asLong();
+        String userName = jwt.getClaim(CLAIM_USER_NAME).asString();
+        String userRole = jwt.getClaim(CLAIM_USER_ROLE).asString();
+        if (userId == null || !StringUtils.hasText(userName) || !StringUtils.hasText(userRole)) {
+            throw new MissingException(JWT_TOKEN_CLAIM_MISSING);
+        }
+        return UserVO.builder()
+                .userId(userId)
+                .userName(userName)
+                .userRole(userRole)
+                .build();
+    }
+
+    private Algorithm getAlgorithm() {
+        return Algorithm.HMAC256(jwtProperties.getSecret());
+    }
+}

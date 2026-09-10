@@ -1,0 +1,8 @@
+# Package the backend with Maven first; use zflow-app/target as build context.
+FROM public.ecr.aws/docker/library/eclipse-temurin:17-jre-alpine
+WORKDIR /app
+RUN addgroup -S miniagent && adduser -S miniagent -G miniagent && chown miniagent:miniagent /app
+COPY --chown=miniagent:miniagent zflow-app.jar /app/app.jar
+USER miniagent
+EXPOSE 8066
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

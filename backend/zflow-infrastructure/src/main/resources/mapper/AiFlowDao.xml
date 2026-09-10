@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiFlowDao">
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiFlow">
+        <id column="id" property="id"/>
+        <result column="agent_id" property="agentId"/>
+        <result column="client_id" property="clientId"/>
+        <result column="client_role" property="clientRole"/>
+        <result column="user_prompt" property="userPrompt"/>
+        <result column="flow_seq" property="flowSeq"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByAgentId" parameterType="java.lang.String" resultMap="dataMap">
+        SELECT id,
+               agent_id,
+               client_id,
+               client_role,
+               user_prompt,
+               flow_seq,
+               create_time,
+               update_time
+        FROM ai_flow
+        WHERE agent_id = #{agentId}
+        ORDER BY flow_seq DESC, update_time DESC, id DESC
+    </select>
+
+    <select id="queryById" resultMap="dataMap">
+        SELECT id,
+               agent_id,
+               client_id,
+               client_role,
+               user_prompt,
+               flow_seq,
+               create_time,
+               update_time
+        FROM ai_flow
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="queryAgentIdByClientId" resultType="java.lang.String">
+        SELECT agent_id
+        FROM ai_flow
+        WHERE client_id = #{clientId}
+    </select>
+
+    <update id="loadUserPrompt">
+        UPDATE ai_flow
+        SET user_prompt = #{userPrompt}
+        WHERE client_id = #{clientId}
+    </update>
+
+    <select id="queryByAgentIdAndClientId" resultMap="dataMap">
+        SELECT id,
+               agent_id,
+               client_id,
+               client_role,
+               user_prompt,
+               flow_seq,
+               create_time,
+               update_time
+        FROM ai_flow
+        WHERE agent_id = #{agentId}
+          AND client_id = #{clientId}
+    </select>
+
+    <select id="queryByAgentIdAndClientRole" resultMap="dataMap">
+        SELECT id,
+               agent_id,
+               client_id,
+               client_role,
+               user_prompt,
+               flow_seq,
+               create_time,
+               update_time
+        FROM ai_flow
+        WHERE agent_id = #{agentId}
+          AND client_role = #{clientRole}
+        LIMIT 1
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(1)
+        FROM ai_flow
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiFlow">
+        INSERT INTO ai_flow (agent_id, client_id, client_role, user_prompt, flow_seq)
+        VALUES (#{agentId}, #{clientId}, #{clientRole}, #{userPrompt}, #{flowSeq})
+    </insert>
+
+    <update id="update" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiFlow">
+        UPDATE ai_flow
+        <set>
+            <if test="agentId != null">agent_id = #{agentId},</if>
+            <if test="clientId != null">client_id = #{clientId},</if>
+            <if test="clientRole != null">client_role = #{clientRole},</if>
+            <if test="userPrompt != null">user_prompt = #{userPrompt},</if>
+            <if test="flowSeq != null">flow_seq = #{flowSeq},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE
+        FROM ai_flow
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByAgentId">
+        DELETE
+        FROM ai_flow
+        WHERE agent_id = #{agentId}
+    </delete>
+
+    <delete id="deleteByClientId">
+        DELETE
+        FROM ai_flow
+        WHERE client_id = #{clientId}
+    </delete>
+
+</mapper>

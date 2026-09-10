@@ -1,0 +1,8 @@
+# Build context must be the service's target directory after Maven packaging.
+# Microsoft OpenJDK provides Java 17 without downloading a Docker Hub image.
+FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu
+WORKDIR /app
+ARG JAR_FILE
+COPY ${JAR_FILE} /app/app.jar
+ENV JAVA_OPTS=""
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

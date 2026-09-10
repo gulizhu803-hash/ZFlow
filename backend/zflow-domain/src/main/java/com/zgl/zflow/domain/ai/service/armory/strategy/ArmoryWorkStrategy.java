@@ -1,0 +1,68 @@
+package com.zgl.zflow.domain.ai.service.armory.strategy;
+
+import com.zgl.zflow.domain.ai.model.entity.ArmoryRequestEntity;
+import com.zgl.zflow.domain.ai.model.vo.AiFlowVO;
+import com.zgl.zflow.domain.ai.repository.IAiRepository;
+import com.zgl.zflow.domain.ai.service.armory.ArmoryContext;
+import com.zgl.zflow.domain.ai.service.armory.IArmoryStrategy;
+import com.zgl.zflow.types.exception.MissingException;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static com.zgl.zflow.domain.ai.model.enumeration.AiArmoryType.ARMORY_WORK;
+import static com.zgl.zflow.types.constant.ExceptionMessage.ARMORY_EMPTY;
+
+@Slf4j
+@Service("armoryWorkStrategy")
+public class ArmoryWorkStrategy implements IArmoryStrategy {
+
+    @Resource
+    private IAiRepository aiRepository;
+
+    @Resource
+    private ArmoryChatStrategy armoryChatStrategy;
+
+    @Override
+    public void armory(ArmoryRequestEntity armoryRequestEntity, ArmoryContext armoryContext) {
+
+        Set<String> agentIdSet = armoryRequestEntity.getArmoryIdSet();
+        if (agentIdSet == null || agentIdSet.isEmpty()) {
+            throw new MissingException(ARMORY_EMPTY);
+        }
+
+        Set<String> clientIdSet = new HashSet<>();
+        for (String agentId : agentIdSet) {
+            Map<String, AiFlowVO> flowMap = aiRepository.queryAiFlowVOMapByAgentId(agentId);
+            if (flowMap == null || flowMap.isEmpty()) {
+                continue;
+            }
+            for (AiFlowVO flowVO : flowMap.values()) {
+                if (flowVO != null && flowVO.getClientId() != null && !flowVO.getClientId().isBlank()) {
+                    clientIdSet.add(flowVO.getClientId());
+                }
+            }
+        }
+
+        if (clientIdSet.isEmpty()) {
+            throw new MissingException(ARMORY_EMPTY);
+        }
+
+        ArmoryRequestEntity clientArmoryRequest = ArmoryRequestEntity.builder()
+                .armoryType("client")
+                .armoryIdSet(clientIdSet)
+                .build();
+
+        armoryChatStrategy.armory(clientArmoryRequest, armoryContext);
+    }
+
+    @Override
+    public String getType() {
+        return ARMORY_WORK.getType();
+    }
+
+}

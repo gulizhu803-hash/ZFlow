@@ -1,0 +1,120 @@
+package com.zgl.zflow.domain.ai.service.execute.step.node;
+
+import cn.bugstack.wrench.design.framework.tree.StrategyHandler;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.zgl.zflow.domain.ai.model.entity.ExecuteRequestEntity;
+import com.zgl.zflow.domain.ai.model.entity.ExecuteResponseEntity;
+import com.zgl.zflow.domain.ai.model.vo.AiFlowVO;
+import com.zgl.zflow.domain.ai.service.execute.AbstractExecuteNode;
+import com.zgl.zflow.domain.ai.service.execute.ExecuteContext;
+import com.zgl.zflow.types.exception.MissingException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.zgl.zflow.domain.ai.model.enumeration.AiClientRole.*;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiSectionType.PLANNER_STEP;
+import static com.zgl.zflow.domain.ai.model.enumeration.AiType.CLIENT;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+import static com.zgl.zflow.types.constant.ChatConstant.CHAT_MEMORY_RETRIEVE_SIZE_WORK;
+import static com.zgl.zflow.types.constant.ExceptionMessage.EXECUTE_PLANNER_RESULT_EMPTY;
+
+@Slf4j
+@Service(value = "plannerNode")
+public class StepPlannerNode extends AbstractExecuteNode {
+
+    @Override
+    protected String doApply(ExecuteRequestEntity executeRequestEntity, ExecuteContext executeContext) throws Exception {
+
+        String plannerJson;
+        JSONArray plannerArray;
+
+        String inspectorResponse = executeContext.getValue(INSPECTOR.getContextKey());
+        if (inspectorResponse == null || inspectorResponse.isEmpty()) {
+            inspectorResponse = "[任务审查专家异常，请你依据用户原始需求分析]";
+        }
+
+        try {
+            // 获取客户端
+            AiFlowVO aiFlowVO = executeContext.getAiFlowVOMap().get(PLANNER.getRole());
+            String clientBeanName = CLIENT.getBeanName(aiFlowVO.getClientId());
+            ChatClient plannerClient = getBean(clientBeanName);
+
+            // 获取提示词
+            String userPrompt = aiFlowVO.getUserPrompt();
+            String plannerPrompt = userPrompt.formatted(
+                    executeContext.getUserMessage(),
+                    inspectorResponse
+            );
+
+            // 获取客户端结果
+            String plannerResponse = plannerClient
+                    .prompt(plannerPrompt)
+                    .advisors(a -> a
+                            .param(CHAT_MEMORY_CONVERSATION_ID_KEY, executeRequestEntity.getSessionId())
+                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE_WORK))
+                    .call()
+                    .content();
+
+            // 解析客户端结果
+            plannerJson = extractJson(plannerResponse, "[]");
+            plannerArray = parseJsonArray(plannerJson);
+            if (plannerArray == null) {
+                throw new MissingException(EXECUTE_PLANNER_RESULT_EMPTY);
+            }
+
+        } catch (Exception e) {
+            log.error("【执行节点】StepPlannerNode", e);
+            plannerArray = buildExceptionArray(PLANNER.getExceptionType(), e.getMessage());
+        }
+
+        // 发送客户端结果
+        parsePlannerResponse(executeContext, plannerArray, executeRequestEntity.getSessionId());
+
+        return router(executeRequestEntity, executeContext);
+    }
+
+    @Override
+    public StrategyHandler<ExecuteRequestEntity, ExecuteContext, String> get(ExecuteRequestEntity executeRequestEntity, ExecuteContext executeContext) throws Exception {
+        return getBean(RUNNER.getNodeName());
+    }
+
+    private void parsePlannerResponse(ExecuteContext executeContext, JSONArray plannerArray, String sessionId) {
+        if (plannerArray == null) {
+            return;
+        }
+
+        List<String> plannerList = new ArrayList<>();
+
+        for (Object item : plannerArray) {
+            if (item instanceof JSONObject obj) {
+                String sectionContent = obj.toJSONString();
+                if (!sectionContent.isEmpty()) {
+                    sendPlannerResponse(executeContext, PLANNER_STEP.getType(), sectionContent, sessionId);
+                    plannerList.add(sectionContent);
+                }
+            }
+        }
+
+        // 保存客户端结果
+        executeContext.setValue(PLANNER.getContextKey(), plannerList);
+    }
+
+    private void sendPlannerResponse(ExecuteContext executeContext, String sectionType, String sectionContent, String sessionId) {
+        if (!sectionType.isEmpty() && sectionContent != null && !sectionContent.isEmpty()) {
+            ExecuteResponseEntity executeResponseEntity = ExecuteResponseEntity.createPlannerResponse(
+                    sectionType,
+                    sectionContent,
+                    sessionId
+            );
+
+            sendSseMessage(executeContext, executeResponseEntity);
+        }
+    }
+
+}

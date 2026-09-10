@@ -1,0 +1,37 @@
+{
+  "name": "zflow-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test app/tests/*.test.mjs",
+    "test:live": "node scripts/live-integration.mjs",
+    "test:legacy": "node ./scripts/test-routes.mjs",
+    "contract:studio": "node scripts/build-studio-contract.mjs"
+  },
+  "dependencies": {
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.3",
+    "@vue-flow/core": "^1.48.2",
+    "@vue-flow/minimap": "^1.5.4",
+    "axios": "^1.7.9",
+    "cropperjs": "^1.6.2",
+    "dompurify": "^3.0.8",
+    "echarts": "^5.5.0",
+    "highlight.js": "^11.10.0",
+    "marked": "^12.0.2",
+    "pinia": "^2.2.6",
+    "vue": "^3.5.24",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.2.4"
+  }
+}

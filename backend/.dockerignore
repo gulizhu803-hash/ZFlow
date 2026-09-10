@@ -1,0 +1,7 @@
+**/target
+**/.env
+**/.env.*
+**/logs
+.git
+.idea
+docs

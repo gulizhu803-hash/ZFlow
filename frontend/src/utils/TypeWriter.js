@@ -1,0 +1,159 @@
+export const DEFAULT_TYPEWRITER_SEGMENTS = [
+    [
+        '你好，我是知流！',
+        '欢迎来到 ZFlow 系统，',
+        '快点使用我的专用智能体来处理任务吧～'
+    ],
+    [
+        '我可以帮你在 Studio 里快速组装专属 ZFlow，',
+        '只需要指定接口模型、执行策略、MCP 工具和任务需求，',
+        '想法转变为智能体，交给我就好。'
+    ],
+    [
+        '在 Plaza 你可以浏览热门案例，点赞收藏并一键 Fork，',
+        '收集你喜欢的 ZFlow 进 Repository 以持续复用，',
+        '从看到做，我帮你一步通关！'
+    ],
+    [
+        '无论是 Chat 对话还是 Work 任务，',
+        '我都会按你的目标输出可执行、可追踪、可复用的结果，',
+        '由于资源有限，会话数量和消息数量都有限制哦～'
+    ],
+    [
+        'Fork 完，别忘记去 Setting 填写需要配置的内容，',
+        '一次配置，即可全局使用！'
+    ]
+];
+
+export const createTypewriter = ({
+    segments = DEFAULT_TYPEWRITER_SEGMENTS,
+    charDelay = 60,
+    segmentPause = 3000,
+    loop = true,
+    onUpdate
+} = {}) => {
+    let typingTimer = null;
+    let pauseTimer = null;
+    let running = false;
+    let segmentIndex = 0;
+    let lineIndex = 0;
+    let charIndex = 0;
+    let displayLines = [];
+
+    const emit = (playing) => {
+        onUpdate &&
+            onUpdate({
+                lines: [...displayLines],
+                segmentIndex,
+                lineIndex,
+                playing
+            });
+    };
+
+    const clearTimers = () => {
+        if (typingTimer) {
+            clearTimeout(typingTimer);
+            typingTimer = null;
+        }
+        if (pauseTimer) {
+            clearTimeout(pauseTimer);
+            pauseTimer = null;
+        }
+    };
+
+    const stop = () => {
+        if (!running) {
+            clearTimers();
+            return;
+        }
+        running = false;
+        clearTimers();
+        emit(false);
+    };
+
+    const resetState = () => {
+        segmentIndex = 0;
+        lineIndex = 0;
+        charIndex = 0;
+        displayLines = [];
+    };
+
+    const prepareSegment = () => {
+        const segment = segments[segmentIndex] || [];
+        displayLines = segment.map(() => '');
+        lineIndex = 0;
+        charIndex = 0;
+        emit(true);
+    };
+
+    const tick = () => {
+        if (!running) {
+            return;
+        }
+        const segment = segments[segmentIndex];
+        if (!segment || segment.length === 0) {
+            stop();
+            return;
+        }
+        const line = segment[lineIndex] || '';
+        if (charIndex < line.length) {
+            displayLines[lineIndex] = (displayLines[lineIndex] || '') + line[charIndex];
+            charIndex += 1;
+            emit(true);
+            typingTimer = setTimeout(tick, charDelay);
+            return;
+        }
+
+        lineIndex += 1;
+        charIndex = 0;
+        if (lineIndex < segment.length) {
+            emit(true);
+            typingTimer = setTimeout(tick, charDelay);
+            return;
+        }
+
+        pauseTimer = setTimeout(() => {
+            if (!running) {
+                return;
+            }
+            advanceSegment();
+        }, segmentPause);
+    };
+
+    const advanceSegment = () => {
+        segmentIndex += 1;
+        if (segmentIndex >= segments.length) {
+            if (!loop) {
+                stop();
+                return;
+            }
+            segmentIndex = 0;
+        }
+        prepareSegment();
+        typingTimer = setTimeout(tick, charDelay);
+    };
+
+    const start = () => {
+        stop();
+        resetState();
+        if (!segments || segments.length === 0) {
+            emit(false);
+            return;
+        }
+        running = true;
+        prepareSegment();
+        typingTimer = setTimeout(tick, charDelay);
+    };
+
+    const reset = () => {
+        stop();
+        resetState();
+        emit(false);
+    };
+
+    return {
+        start,
+        stop,
+        reset
+    };
+};

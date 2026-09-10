@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IAiMcpDao">
+    <resultMap id="dataMap" type="com.zgl.zflow.infrastructure.persistent.po.AiMcp">
+        <id column="id" property="id"/>
+        <result column="mcp_id" property="mcpId"/>
+        <result column="mcp_name" property="mcpName"/>
+        <result column="mcp_type" property="mcpType"/>
+        <result column="mcp_param" property="mcpParam"/>
+        <result column="mcp_secret" property="mcpSecret"/>
+        <result column="mcp_desc" property="mcpDesc"/>
+        <result column="mcp_timeout" property="mcpTimeout"/>
+        <result column="mcp_from" property="mcpFrom"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryByMcpId" parameterType="java.lang.String" resultMap="dataMap">
+        SELECT id,
+               mcp_id,
+               mcp_name,
+               mcp_type,
+               mcp_param,
+               mcp_secret,
+               mcp_desc,
+               mcp_timeout,
+               mcp_from,
+               create_time,
+               update_time
+        FROM ai_mcp
+        WHERE mcp_id = #{mcpId}
+    </select>
+
+    <select id="queryByMcpIdList" parameterType="java.util.List" resultMap="dataMap">
+        SELECT id,
+               mcp_id,
+               mcp_name,
+               mcp_type,
+               mcp_param,
+               mcp_secret,
+               mcp_desc,
+               mcp_timeout,
+               mcp_from,
+               create_time,
+               update_time
+        FROM ai_mcp
+        WHERE mcp_id IN
+        <foreach collection="mcpIdList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="queryMcpByUserId" resultMap="dataMap">
+        SELECT id,
+               mcp_id,
+               mcp_name,
+               mcp_type,
+               mcp_param,
+               mcp_secret,
+               mcp_desc,
+               mcp_timeout,
+               mcp_from,
+               create_time,
+               update_time
+        FROM ai_mcp
+        WHERE mcp_from = #{userId}
+    </select>
+
+    <select id="page" resultMap="dataMap">
+        SELECT id,
+               mcp_id,
+               mcp_name,
+               mcp_type,
+               mcp_param,
+               mcp_secret,
+               mcp_desc,
+               mcp_timeout,
+               mcp_from,
+               create_time,
+               update_time
+        FROM ai_mcp
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    mcp_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_type LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_desc LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY update_time DESC, id DESC
+        <if test="offset != null and size != null">
+            LIMIT #{offset}, #{size}
+        </if>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_mcp
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    mcp_id LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_type LIKE CONCAT('%', #{keyword}, '%')
+                    OR mcp_desc LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_mcp
+    </select>
+
+    <insert id="insert" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiMcp">
+        INSERT INTO ai_mcp (mcp_id,
+                            mcp_name,
+                            mcp_type,
+                            mcp_param,
+                            mcp_secret,
+                            mcp_desc,
+                            mcp_timeout,
+                            mcp_from)
+        VALUES (#{mcpId},
+                #{mcpName},
+                #{mcpType},
+                #{mcpParam},
+                #{mcpSecret},
+                #{mcpDesc},
+                #{mcpTimeout},
+                #{mcpFrom})
+    </insert>
+
+    <update id="update" parameterType="com.zgl.zflow.infrastructure.persistent.po.AiMcp">
+        UPDATE ai_mcp
+        <set>
+            <if test="mcpId != null">mcp_id = #{mcpId},</if>
+            <if test="mcpName != null">mcp_name = #{mcpName},</if>
+            <if test="mcpType != null">mcp_type = #{mcpType},</if>
+            <if test="mcpParam != null">mcp_param = #{mcpParam},</if>
+            <if test="mcpSecret != null">mcp_secret = #{mcpSecret},</if>
+            <if test="mcpDesc != null">mcp_desc = #{mcpDesc},</if>
+            <if test="mcpTimeout != null">mcp_timeout = #{mcpTimeout},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="listUserMcp" resultMap="dataMap">
+        SELECT id,
+               mcp_id,
+               mcp_name,
+               mcp_type,
+               mcp_param,
+               mcp_secret,
+               mcp_desc,
+               mcp_timeout,
+               mcp_from,
+               create_time,
+               update_time
+        FROM ai_mcp
+        WHERE mcp_from = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND (
+            mcp_id LIKE CONCAT('%', #{keyword}, '%')
+            OR mcp_name LIKE CONCAT('%', #{keyword}, '%')
+            OR mcp_type LIKE CONCAT('%', #{keyword}, '%')
+            OR mcp_desc LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <delete id="deleteByMcpId">
+        DELETE
+        FROM ai_mcp
+        WHERE mcp_id = #{mcpId}
+    </delete>
+</mapper>

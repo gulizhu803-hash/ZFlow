@@ -1,0 +1,162 @@
+package com.zgl.zflow.infrastructure.repository;
+
+import com.zgl.zflow.domain.user.model.vo.*;
+import com.zgl.zflow.domain.user.repository.IQueryRepository;
+import com.zgl.zflow.domain.util.jwt.UserContext;
+import com.zgl.zflow.infrastructure.persistent.dao.IAiAgentDao;
+import com.zgl.zflow.infrastructure.persistent.dao.IAiClientDao;
+import com.zgl.zflow.infrastructure.persistent.dao.IAiMcpDao;
+import com.zgl.zflow.infrastructure.persistent.dao.IAiModelDao;
+import com.zgl.zflow.infrastructure.persistent.po.AiAgent;
+import com.zgl.zflow.infrastructure.persistent.po.AiClient;
+import com.zgl.zflow.infrastructure.persistent.po.AiMcp;
+import com.zgl.zflow.infrastructure.persistent.po.AiModel;
+import com.zgl.zflow.types.annotation.Cacheable;
+import com.zgl.zflow.types.enumeration.CacheType;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.zgl.zflow.types.constant.RedisConstant.*;
+
+@Repository
+@Slf4j
+public class QueryRepository implements IQueryRepository {
+
+    @Resource
+    private IAiClientDao aiClientDao;
+
+    @Resource
+    private IAiMcpDao aiMcpDao;
+
+    @Resource
+    private IAiAgentDao aiAgentDao;
+
+    @Resource
+    private IAiModelDao aiModelDao;
+
+    @Resource
+    private UserContext userContext;
+
+    @Resource(name = "postgresqlTemplate")
+    private JdbcTemplate jdbcTemplate;
+
+    @Value("${miniagent.embedding.schema-name}")
+    private String embeddingSchemaName;
+
+    @Value("${miniagent.embedding.table-name}")
+    private String embeddingTableName;
+
+    @Override
+    @Cacheable(cacheKey = QUERY_WORK_AGENT_KEY, cacheClass = QueryWorkAgentVO.class, cacheType = CacheType.LIST)
+    public List<QueryWorkAgentVO> queryWorkAgentList() {
+
+        Long userId = userContext.getUserId();
+
+        List<AiAgent> aiAgentList = aiAgentDao.queryWorkAgentByUserId(userId);
+        if (aiAgentList == null || aiAgentList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return aiAgentList.stream()
+                .filter(a -> a != null && Integer.valueOf(1).equals(a.getAgentStatus()))
+                .map(aiAgent -> QueryWorkAgentVO.builder()
+                        .agentId(aiAgent.getAgentId())
+                        .agentType(aiAgent.getAgentType())
+                        .agentName(aiAgent.getAgentName())
+                        .agentDesc(aiAgent.getAgentDesc())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Cacheable(cacheKey = QUERY_CHAT_CLIENT_KEY, cacheClass = QueryChatClientVO.class, cacheType = CacheType.LIST)
+    public List<QueryChatClientVO> queryChatClientList() {
+
+        Long userId = userContext.getUserId();
+
+        List<AiClient> aiClientList = aiClientDao.queryChatClientByUserId(userId);
+        if (aiClientList == null || aiClientList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return aiClientList.stream()
+                .filter(c -> c != null && Integer.valueOf(1).equals(c.getClientStatus()))
+                .map(aiClient -> QueryChatClientVO.builder()
+                        .clientId(aiClient.getClientId())
+                        .modelName(aiClient.getModelName())
+                        .clientName(aiClient.getClientName())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Cacheable(cacheKey = QUERY_MCP_KEY, cacheClass = QueryMcpVO.class, cacheType = CacheType.LIST)
+    public List<QueryMcpVO> queryMcpList() {
+
+        Long userId = userContext.getUserId();
+
+        List<AiMcp> aiMcpList = aiMcpDao.queryMcpByUserId(userId);
+        if (aiMcpList == null || aiMcpList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return aiMcpList.stream()
+                .map(aiMcp -> QueryMcpVO.builder()
+                        .mcpId(aiMcp.getMcpId())
+                        .mcpName(aiMcp.getMcpName())
+                        .mcpDesc(aiMcp.getMcpDesc())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Cacheable(cacheKey = QUERY_API_KEY, cacheClass = QueryModelVO.class, cacheType = CacheType.LIST)
+    public List<QueryModelVO> queryModelList() {
+
+        Long userId = userContext.getUserId();
+
+        List<AiModel> aiModelList = aiModelDao.queryModelByUserId(userId);
+        if (aiModelList == null || aiModelList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return aiModelList.stream()
+                .map(aiModel -> QueryModelVO.builder()
+                        .apiId(aiModel.getApiId())
+                        .modelId(aiModel.getModelId())
+                        .modelName(aiModel.getModelName())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Cacheable(cacheKey = QUERY_RAG_KEY, cacheClass = QueryRagVO.class, cacheType = CacheType.LIST)
+    public List<QueryRagVO> queryRagList() {
+        Long userId = userContext.getUserId();
+        if (userId == null) {
+            return List.of();
+        }
+
+        String tableRef = embeddingSchemaName + "." + embeddingTableName;
+        String sql = """
+                SELECT DISTINCT metadata::jsonb->>'knowledge' AS knowledge
+                FROM %s
+                WHERE jsonb_exists(metadata::jsonb, 'knowledge')
+                  AND jsonb_exists(metadata::jsonb, 'userId')
+                  AND metadata::jsonb->>'knowledge' <> ''
+                  AND metadata::jsonb->>'userId' = ?
+                """
+                .formatted(tableRef);
+        List<String> ragTagList = jdbcTemplate.queryForList(sql, String.class, String.valueOf(userId));
+        return ragTagList.stream()
+                .map(ragTag -> QueryRagVO.builder().ragTag(ragTag).build())
+                .toList();
+    }
+
+}

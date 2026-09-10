@@ -1,0 +1,29 @@
+server:
+  port: 9001
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
+
+spring:
+  application:
+    name: mcp-server-csdn
+
+  ai:
+    mcp:
+      server:
+        name: mcp-server-csdn
+        version: 1.0.0
+
+logging:
+  level:
+    root: info
+  config: classpath:logback-spring.xml
+
+miniagent:
+  mcp:
+    header:
+      secret: X-MiniAgent-Mcp-Secret
+      user-id: X-MiniAgent-Mcp-UserId

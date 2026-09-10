@@ -1,0 +1,23 @@
+package com.zgl.zflow.infrastructure.persistent.dao;
+
+import com.zgl.zflow.infrastructure.persistent.po.AiPlazaLike;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Set;
+
+@Mapper
+public interface IAiPlazaLikeDao {
+
+    AiPlazaLike queryByPlazaIdAndUserId(@Param("plazaId") String plazaId, @Param("userId") Long userId);
+
+    Set<String> queryLikedByUserIdAndPlazaIdList(@Param("userId") Long userId, @Param("plazaIdList") List<String> plazaIdList);
+
+    Integer insert(AiPlazaLike aiPlazaLike);
+
+    Integer delete(@Param("plazaId") String plazaId, @Param("userId") Long userId);
+
+    Integer deleteByPlazaId(@Param("plazaId") String plazaId);
+
+}

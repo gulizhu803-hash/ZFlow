@@ -1,0 +1,4015 @@
+{
+  "endpoints": [
+    {
+      "path": "/user/query/work-agent",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.QueryWorkAgentVO](API-SCHEMAS.md#user-queryworkagentvo)&gt;&gt;",
+      "description": "任务可选智能体"
+    },
+    {
+      "path": "/user/query/chat-client",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.QueryChatClientVO](API-SCHEMAS.md#user-querychatclientvo)&gt;&gt;",
+      "description": "对话可选客户端，取 clientId"
+    },
+    {
+      "path": "/user/query/mcp",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.QueryMcpVO](API-SCHEMAS.md#user-querymcpvo)&gt;&gt;",
+      "description": "可选 MCP"
+    },
+    {
+      "path": "/user/query/rag",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.QueryRagVO](API-SCHEMAS.md#user-queryragvo)&gt;&gt;",
+      "description": "知识库标签"
+    },
+    {
+      "path": "/user/query/role",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Map&lt;String, [user.QueryRoleVO](API-SCHEMAS.md#user-queryrolevo)&gt;&gt;",
+      "description": "按角色标识索引的角色信息"
+    },
+    {
+      "path": "/user/query/model",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.QueryModelVO](API-SCHEMAS.md#user-querymodelvo)&gt;&gt;",
+      "description": "Studio 可选模型，取 modelId"
+    },
+    {
+      "path": "/user/auth/login",
+      "params": "JSON：[user.AuthDTO](API-SCHEMAS.md#user-authdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[user.AuthVO](API-SCHEMAS.md#user-authvo)&gt;",
+      "description": "登录；免 JWT；AuthVO 平铺"
+    },
+    {
+      "path": "/user/auth/register",
+      "params": "JSON：[user.AuthDTO](API-SCHEMAS.md#user-authdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[user.AuthVO](API-SCHEMAS.md#user-authvo)&gt;",
+      "description": "注册；免 JWT；返回登录凭据"
+    },
+    {
+      "path": "/user/profile/query",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[user.AuthVO](API-SCHEMAS.md#user-authvo)&gt;",
+      "description": "个人资料，同时返回新 JWT"
+    },
+    {
+      "path": "/user/profile/edit",
+      "params": "multipart：`profile` 必传 [user.ProfileEditDTO](API-SCHEMAS.md#user-profileeditdto)；`avatar:File` 可选",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[user.AuthVO](API-SCHEMAS.md#user-authvo)&gt;",
+      "description": "profile 为 application/json part；密码字段成对提交"
+    },
+    {
+      "path": "/user/model/list",
+      "params": "Query：`keyword:string` 可选，默认 \"\"",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.UserApiModelVO](API-SCHEMAS.md#user-userapimodelvo)&gt;&gt;",
+      "description": "查询列表模型"
+    },
+    {
+      "path": "/user/model/insert",
+      "params": "JSON：[user.SettingApiModelDTO](API-SCHEMAS.md#user-settingapimodeldto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增模型"
+    },
+    {
+      "path": "/user/model/update",
+      "params": "JSON：[user.SettingApiModelDTO](API-SCHEMAS.md#user-settingapimodeldto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "需原 apiId 和完整必填字段"
+    },
+    {
+      "path": "/user/model/delete",
+      "params": "Query：`apiId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除定位字段 apiId，非 modelId"
+    },
+    {
+      "path": "/user/mcp/list",
+      "params": "Query：`keyword:string` 可选，默认 \"\"",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.UserMcpVO](API-SCHEMAS.md#user-usermcpvo)&gt;&gt;",
+      "description": "查询列表MCP"
+    },
+    {
+      "path": "/user/mcp/insert",
+      "params": "JSON：[user.SettingMcpDTO](API-SCHEMAS.md#user-settingmcpdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增MCP"
+    },
+    {
+      "path": "/user/mcp/update",
+      "params": "JSON：[user.SettingMcpDTO](API-SCHEMAS.md#user-settingmcpdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "需原 mcpId 和完整必填字段"
+    },
+    {
+      "path": "/user/mcp/delete",
+      "params": "Query：`mcpId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除MCP"
+    },
+    {
+      "path": "/user/task/list",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[user.UserTaskVO](API-SCHEMAS.md#user-usertaskvo)&gt;&gt;",
+      "description": "查询列表定时任务"
+    },
+    {
+      "path": "/user/task/insert",
+      "params": "JSON：[user.SettingTaskDTO](API-SCHEMAS.md#user-settingtaskdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "taskParam 是 JSON 字符串；保存不等于已注册执行"
+    },
+    {
+      "path": "/user/task/update",
+      "params": "JSON：[user.SettingTaskDTO](API-SCHEMAS.md#user-settingtaskdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "需原 taskId 和完整必填字段"
+    },
+    {
+      "path": "/user/task/delete",
+      "params": "Query：`taskId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除定时任务"
+    },
+    {
+      "path": "/user/task/toggle",
+      "params": "Query：`taskId:string` 必传；`taskStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态定时任务"
+    },
+    {
+      "path": "/session/list",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[session.SessionVO](API-SCHEMAS.md#session-sessionvo)&gt;&gt;",
+      "description": "当前用户会话"
+    },
+    {
+      "path": "/session/insert",
+      "params": "Query：`sessionTitle:string` 必传；`sessionType:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[session.SessionVO](API-SCHEMAS.md#session-sessionvo)&gt;",
+      "description": "创建会话，按类型最多 3 个"
+    },
+    {
+      "path": "/session/update",
+      "params": "Query：`sessionId:string` 必传；`sessionTitle:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "空白标题归一为“未命名会话”"
+    },
+    {
+      "path": "/session/delete",
+      "params": "Query：`sessionId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除本人会话"
+    },
+    {
+      "path": "/session/message/chat",
+      "params": "Query：`sessionId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[session.MessageVO](API-SCHEMAS.md#session-messagevo)&gt;&gt;",
+      "description": "聊天历史，需访问权"
+    },
+    {
+      "path": "/session/message/work-sse",
+      "params": "Query：`sessionId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[session.MessageVO](API-SCHEMAS.md#session-messagevo)&gt;&gt;",
+      "description": "阶段历史，messageContent 需二次解析"
+    },
+    {
+      "path": "/session/message/work-answer",
+      "params": "Query：`sessionId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[session.MessageVO](API-SCHEMAS.md#session-messagevo)&gt;&gt;",
+      "description": "任务输入与最终答复历史"
+    },
+    {
+      "path": "/ai/work/execute",
+      "params": "JSON：[ai.AiWorkDTO](API-SCHEMAS.md#ai-aiworkdto)",
+      "response": "SseEmitter",
+      "description": "任务流；message/complete/error 三类事件"
+    },
+    {
+      "path": "/ai/chat/complete",
+      "params": "JSON：[ai.AiChatDTO](API-SCHEMAS.md#ai-aichatdto)",
+      "response": "String",
+      "description": "完整对话；原始文本，错误也可能是普通文本"
+    },
+    {
+      "path": "/ai/chat/stream",
+      "params": "JSON：[ai.AiChatDTO](API-SCHEMAS.md#ai-aichatdto)",
+      "response": "Flux&lt;String&gt;",
+      "description": "流式对话；Accept: text/event-stream；data 为文本，EOF 结束"
+    },
+    {
+      "path": "/ai/armory",
+      "params": "JSON：[ai.AiArmoryDTO](API-SCHEMAS.md#ai-aiarmorydto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "装配；chat→clientId，work→agentId"
+    },
+    {
+      "path": "/ai/rag/file",
+      "params": "multipart：`ragTag:string` 必传；`fileList:File[]` 必传（同名多 part）",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "同步导入；重复 fileList 字段；允许部分文件成功"
+    },
+    {
+      "path": "/ai/rag/git",
+      "params": "JSON：[ai.AiUploadDTO](API-SCHEMAS.md#ai-aiuploaddto)（无 @Valid）",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "同步 Git 导入；入口无 @Valid"
+    },
+    {
+      "path": "/workspace/plaza/page",
+      "params": "JSON：[workspace.PlazaPageDTO](API-SCHEMAS.md#workspace-plazapagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[workspace.PlazaVO](API-SCHEMAS.md#workspace-plazavo)&gt;&gt;",
+      "description": "sortBy: like/favor/comment，其他按时间；仅 asc 升序"
+    },
+    {
+      "path": "/workspace/plaza/like",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "点赞广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/dislike",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "取消点赞广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/comment",
+      "params": "JSON：[workspace.PlazaCommentDTO](API-SCHEMAS.md#workspace-plazacommentdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "发表评论广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/discomment",
+      "params": "Query：`commentId:string` 必传；`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除评论广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/comment-area",
+      "params": "JSON：[workspace.PlazaCommentAreaDTO](API-SCHEMAS.md#workspace-plazacommentareadto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[workspace.CommentVO](API-SCHEMAS.md#workspace-commentvo)&gt;&gt;",
+      "description": "评论分页，pageSize 1..20"
+    },
+    {
+      "path": "/workspace/plaza/favor",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "收藏广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/disfavor",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "取消收藏广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/plaza/delete",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除广场内容；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/repo/map",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Map&lt;String, List&lt;[workspace.RepoVO](API-SCHEMAS.md#workspace-repovo)&gt;&gt;&gt;",
+      "description": "固定返回 self/fork/favor 数组键"
+    },
+    {
+      "path": "/workspace/agent/publish",
+      "params": "JSON：[workspace.AgentPublishDTO](API-SCHEMAS.md#workspace-agentpublishdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "发布智能体；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/agent/template",
+      "params": "Query：`templateId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[workspace.TemplateVO](API-SCHEMAS.md#workspace-templatevo)&gt;",
+      "description": "模板快照，参数 templateId"
+    },
+    {
+      "path": "/workspace/agent/detail",
+      "params": "Query：`agentId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[workspace.AgentVO](API-SCHEMAS.md#workspace-agentvo)&gt;",
+      "description": "编辑详情，含 flowId/promptId/clientId"
+    },
+    {
+      "path": "/workspace/agent/update/model",
+      "params": "JSON：[workspace.AgentUpdateModelDTO](API-SCHEMAS.md#workspace-agentupdatemodeldto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "modelId + 非空 clientIdList"
+    },
+    {
+      "path": "/workspace/agent/update/mcp",
+      "params": "JSON：[workspace.AgentUpdateMcpDTO](API-SCHEMAS.md#workspace-agentupdatemcpdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "clientIdList 非空；mcpIdList: [] 清空，不可为 null"
+    },
+    {
+      "path": "/workspace/agent/update/base",
+      "params": "JSON：[workspace.AgentUpdateBaseDTO](API-SCHEMAS.md#workspace-agentupdatebasedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新智能体"
+    },
+    {
+      "path": "/workspace/agent/update/userprompt",
+      "params": "JSON：[workspace.AgentUpdateUserPromptDTO](API-SCHEMAS.md#workspace-agentupdateuserpromptdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "使用 flowId，clientRole 不能替代"
+    },
+    {
+      "path": "/workspace/agent/update/systemprompt",
+      "params": "JSON：[workspace.AgentUpdateSystemPromptDTO](API-SCHEMAS.md#workspace-agentupdatesystempromptdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "使用 promptId，clientRole 不能替代"
+    },
+    {
+      "path": "/workspace/agent/fork",
+      "params": "Query：`templateId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "Fork智能体；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/workspace/agent/create",
+      "params": "JSON：[workspace.AgentCreateDTO](API-SCHEMAS.md#workspace-agentcreatedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "同步创建并调用 LLM 生成角色提示词；不返回新 ID，完成后刷新仓库"
+    },
+    {
+      "path": "/workspace/agent/delete",
+      "params": "Query：`agentId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除智能体；MQ 异步处理，成功仅表示发送调用完成"
+    },
+    {
+      "path": "/admin/dashboard",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[admin.DashboardVO](API-SCHEMAS.md#admin-dashboardvo)&gt;",
+      "description": "countInfo / graphInfo 嵌套结构"
+    },
+    {
+      "path": "/admin/api/page",
+      "params": "JSON：[admin.ApiPageDTO](API-SCHEMAS.md#admin-apipagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.ApiVO](API-SCHEMAS.md#admin-apivo)&gt;&gt;",
+      "description": "分页查询API 配置"
+    },
+    {
+      "path": "/admin/api/insert",
+      "params": "JSON：[admin.ApiManageDTO](API-SCHEMAS.md#admin-apimanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增API 配置"
+    },
+    {
+      "path": "/admin/api/update",
+      "params": "JSON：[admin.ApiManageDTO](API-SCHEMAS.md#admin-apimanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新API 配置"
+    },
+    {
+      "path": "/admin/api/delete",
+      "params": "Query：`apiId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除API 配置"
+    },
+    {
+      "path": "/admin/model/page",
+      "params": "JSON：[admin.ModelPageDTO](API-SCHEMAS.md#admin-modelpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.ModelVO](API-SCHEMAS.md#admin-modelvo)&gt;&gt;",
+      "description": "分页查询模型"
+    },
+    {
+      "path": "/admin/model/insert",
+      "params": "JSON：[admin.ModelManageDTO](API-SCHEMAS.md#admin-modelmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增模型"
+    },
+    {
+      "path": "/admin/model/update",
+      "params": "JSON：[admin.ModelManageDTO](API-SCHEMAS.md#admin-modelmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新模型"
+    },
+    {
+      "path": "/admin/model/delete",
+      "params": "Query：`modelId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除模型"
+    },
+    {
+      "path": "/admin/mcp/page",
+      "params": "JSON：[admin.McpPageDTO](API-SCHEMAS.md#admin-mcppagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.McpVO](API-SCHEMAS.md#admin-mcpvo)&gt;&gt;",
+      "description": "分页查询MCP"
+    },
+    {
+      "path": "/admin/mcp/insert",
+      "params": "JSON：[admin.McpManageDTO](API-SCHEMAS.md#admin-mcpmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增MCP"
+    },
+    {
+      "path": "/admin/mcp/update",
+      "params": "JSON：[admin.McpManageDTO](API-SCHEMAS.md#admin-mcpmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新MCP"
+    },
+    {
+      "path": "/admin/mcp/delete",
+      "params": "Query：`mcpId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除MCP"
+    },
+    {
+      "path": "/admin/advisor/page",
+      "params": "JSON：[admin.AdvisorPageDTO](API-SCHEMAS.md#admin-advisorpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.AdvisorVO](API-SCHEMAS.md#admin-advisorvo)&gt;&gt;",
+      "description": "分页查询顾问"
+    },
+    {
+      "path": "/admin/advisor/insert",
+      "params": "JSON：[admin.AdvisorManageDTO](API-SCHEMAS.md#admin-advisormanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增顾问"
+    },
+    {
+      "path": "/admin/advisor/update",
+      "params": "JSON：[admin.AdvisorManageDTO](API-SCHEMAS.md#admin-advisormanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新顾问"
+    },
+    {
+      "path": "/admin/advisor/delete",
+      "params": "Query：`advisorId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除顾问"
+    },
+    {
+      "path": "/admin/prompt/page",
+      "params": "JSON：[admin.PromptPageDTO](API-SCHEMAS.md#admin-promptpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.PromptVO](API-SCHEMAS.md#admin-promptvo)&gt;&gt;",
+      "description": "分页查询提示词"
+    },
+    {
+      "path": "/admin/prompt/insert",
+      "params": "JSON：[admin.PromptManageDTO](API-SCHEMAS.md#admin-promptmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "请求字段实际为 systenPrompt"
+    },
+    {
+      "path": "/admin/prompt/update",
+      "params": "JSON：[admin.PromptManageDTO](API-SCHEMAS.md#admin-promptmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "请求 systenPrompt；响应 systemPrompt"
+    },
+    {
+      "path": "/admin/prompt/delete",
+      "params": "Query：`promptId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除提示词"
+    },
+    {
+      "path": "/admin/client/page",
+      "params": "JSON：[admin.ClientPageDTO](API-SCHEMAS.md#admin-clientpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.ClientVO](API-SCHEMAS.md#admin-clientvo)&gt;&gt;",
+      "description": "分页查询客户端"
+    },
+    {
+      "path": "/admin/client/insert",
+      "params": "JSON：[admin.ClientManageDTO](API-SCHEMAS.md#admin-clientmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增客户端"
+    },
+    {
+      "path": "/admin/client/update",
+      "params": "JSON：[admin.ClientManageDTO](API-SCHEMAS.md#admin-clientmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新客户端"
+    },
+    {
+      "path": "/admin/client/delete",
+      "params": "Query：`clientId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除客户端"
+    },
+    {
+      "path": "/admin/client/toggle",
+      "params": "Query：`clientId:string` 必传；`clientStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态客户端"
+    },
+    {
+      "path": "/admin/agent/page",
+      "params": "JSON：[admin.AgentPageDTO](API-SCHEMAS.md#admin-agentpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.AgentVO](API-SCHEMAS.md#admin-agentvo)&gt;&gt;",
+      "description": "分页查询智能体"
+    },
+    {
+      "path": "/admin/agent/list",
+      "params": "JSON：[admin.AgentListDTO](API-SCHEMAS.md#admin-agentlistdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[admin.AgentVO](API-SCHEMAS.md#admin-agentvo)&gt;&gt;",
+      "description": "查询列表智能体"
+    },
+    {
+      "path": "/admin/agent/insert",
+      "params": "JSON：[admin.AgentManageDTO](API-SCHEMAS.md#admin-agentmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增智能体"
+    },
+    {
+      "path": "/admin/agent/update",
+      "params": "JSON：[admin.AgentManageDTO](API-SCHEMAS.md#admin-agentmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新智能体"
+    },
+    {
+      "path": "/admin/agent/delete",
+      "params": "Query：`agentId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除智能体"
+    },
+    {
+      "path": "/admin/agent/toggle",
+      "params": "Query：`agentId:string` 必传；`agentStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态智能体"
+    },
+    {
+      "path": "/admin/user/page",
+      "params": "JSON：[admin.UserPageDTO](API-SCHEMAS.md#admin-userpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.UserVO](API-SCHEMAS.md#admin-uservo)&gt;&gt;",
+      "description": "分页查询用户"
+    },
+    {
+      "path": "/admin/user/insert",
+      "params": "JSON：[admin.UserManageDTO](API-SCHEMAS.md#admin-usermanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增用户"
+    },
+    {
+      "path": "/admin/user/update",
+      "params": "JSON：[admin.UserManageDTO](API-SCHEMAS.md#admin-usermanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "改名传 originUserName；DTO 要求 password/userAvatar 等字段"
+    },
+    {
+      "path": "/admin/user/delete",
+      "params": "Query：`userName:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除用户"
+    },
+    {
+      "path": "/admin/user/toggle",
+      "params": "Query：`userName:string` 必传；`userStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态用户"
+    },
+    {
+      "path": "/admin/config/list",
+      "params": "JSON：[admin.ConfigListDTO](API-SCHEMAS.md#admin-configlistdto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Map&lt;String, List&lt;[admin.ConfigVO](API-SCHEMAS.md#admin-configvo)&gt;&gt;&gt;",
+      "description": "按 clientId 分组；configType 为可选筛选字段"
+    },
+    {
+      "path": "/admin/config/insert",
+      "params": "JSON：[admin.ConfigManageDTO](API-SCHEMAS.md#admin-configmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增关联配置"
+    },
+    {
+      "path": "/admin/config/update",
+      "params": "JSON：[admin.ConfigManageDTO](API-SCHEMAS.md#admin-configmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "改键时传 originClientId/originConfigType/originConfigValue"
+    },
+    {
+      "path": "/admin/config/delete",
+      "params": "Query：`clientId:string` 必传；`configType:string` 必传；`configValue:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除关联配置"
+    },
+    {
+      "path": "/admin/config/toggle",
+      "params": "Query：`clientId:string` 必传；`configType:string` 必传；`configValue:string` 必传；`configStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态关联配置"
+    },
+    {
+      "path": "/admin/flow/client",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[admin.ClientDetailVO](API-SCHEMAS.md#admin-clientdetailvo)&gt;&gt;",
+      "description": "工作客户端及其关联配置详情"
+    },
+    {
+      "path": "/admin/flow/agent",
+      "params": "Query：`agentId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[admin.FlowVO](API-SCHEMAS.md#admin-flowvo)&gt;&gt;",
+      "description": "智能体流程列表"
+    },
+    {
+      "path": "/admin/flow/insert",
+      "params": "JSON：[admin.FlowManageDTO](API-SCHEMAS.md#admin-flowmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增流程"
+    },
+    {
+      "path": "/admin/flow/update",
+      "params": "JSON：[admin.FlowManageDTO](API-SCHEMAS.md#admin-flowmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "改键时传 originAgentId/originClientId"
+    },
+    {
+      "path": "/admin/flow/delete",
+      "params": "Query：`agentId:string` 必传；`clientId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除流程"
+    },
+    {
+      "path": "/admin/task/page",
+      "params": "JSON：[admin.TaskPageDTO](API-SCHEMAS.md#admin-taskpagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.TaskVO](API-SCHEMAS.md#admin-taskvo)&gt;&gt;",
+      "description": "分页查询定时任务"
+    },
+    {
+      "path": "/admin/task/insert",
+      "params": "JSON：[admin.TaskManageDTO](API-SCHEMAS.md#admin-taskmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增定时任务"
+    },
+    {
+      "path": "/admin/task/update",
+      "params": "JSON：[admin.TaskManageDTO](API-SCHEMAS.md#admin-taskmanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新定时任务"
+    },
+    {
+      "path": "/admin/task/delete",
+      "params": "Query：`taskId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除定时任务"
+    },
+    {
+      "path": "/admin/task/toggle",
+      "params": "Query：`taskId:string` 必传；`taskStatus:integer` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "切换状态定时任务"
+    },
+    {
+      "path": "/admin/session/list",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;[admin.SessionVO](API-SCHEMAS.md#admin-sessionvo)&gt;&gt;",
+      "description": "管理员会话列表；消息使用 /session/message/*"
+    },
+    {
+      "path": "/admin/template/page",
+      "params": "JSON：[admin.TemplatePageDTO](API-SCHEMAS.md#admin-templatepagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.TemplateVO](API-SCHEMAS.md#admin-templatevo)&gt;&gt;",
+      "description": "分页查询模板"
+    },
+    {
+      "path": "/admin/template/insert",
+      "params": "JSON：[admin.TemplateManageDTO](API-SCHEMAS.md#admin-templatemanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增模板"
+    },
+    {
+      "path": "/admin/template/update",
+      "params": "JSON：[admin.TemplateManageDTO](API-SCHEMAS.md#admin-templatemanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新模板"
+    },
+    {
+      "path": "/admin/template/delete",
+      "params": "Query：`templateId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除模板"
+    },
+    {
+      "path": "/admin/plaza/page",
+      "params": "JSON：[admin.PlazaPageDTO](API-SCHEMAS.md#admin-plazapagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;[common.PageResult](API-SCHEMAS.md#common-pageresult)&lt;[admin.PlazaVO](API-SCHEMAS.md#admin-plazavo)&gt;&gt;",
+      "description": "分页查询广场内容"
+    },
+    {
+      "path": "/admin/plaza/insert",
+      "params": "JSON：[admin.PlazaManageDTO](API-SCHEMAS.md#admin-plazamanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "新增广场内容"
+    },
+    {
+      "path": "/admin/plaza/update",
+      "params": "JSON：[admin.PlazaManageDTO](API-SCHEMAS.md#admin-plazamanagedto)",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "更新广场内容"
+    },
+    {
+      "path": "/admin/plaza/delete",
+      "params": "Query：`plazaId:string` 必传",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;Void&gt;",
+      "description": "删除广场内容"
+    },
+    {
+      "path": "/admin/list/clientType",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 clientType 字典"
+    },
+    {
+      "path": "/admin/list/agentType",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 agentType 字典"
+    },
+    {
+      "path": "/admin/list/configType",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 configType 字典"
+    },
+    {
+      "path": "/admin/list/clientRole",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 clientRole 字典"
+    },
+    {
+      "path": "/admin/list/userRole",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 userRole 字典"
+    },
+    {
+      "path": "/admin/list/apiId",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 apiId 字典"
+    },
+    {
+      "path": "/admin/list/modelId",
+      "params": "无；空请求体",
+      "response": "[common.Result](API-SCHEMAS.md#common-result)&lt;List&lt;String&gt;&gt;",
+      "description": "查询 modelId 字典"
+    }
+  ],
+  "schemas": {
+    "common.Result": [
+      {
+        "key": "code",
+        "type": "number（整数）",
+        "required": false,
+        "label": "业务码：200 成功、500 失败"
+      },
+      {
+        "key": "info",
+        "type": "string",
+        "required": false,
+        "label": "业务提示"
+      },
+      {
+        "key": "data",
+        "type": "T",
+        "required": false,
+        "label": "业务数据；Void 或错误时为 null"
+      }
+    ],
+    "common.PageResult": [
+      {
+        "key": "total",
+        "type": "number（整数）",
+        "required": false,
+        "label": "总记录数"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": false,
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSum",
+        "type": "number（整数）",
+        "required": false,
+        "label": "总页数"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": false,
+        "label": "每页条数"
+      },
+      {
+        "key": "list",
+        "type": "array&lt;T&gt;",
+        "required": false,
+        "label": "当前页记录"
+      }
+    ],
+    "user.AuthDTO": [
+      {
+        "key": "userName",
+        "type": "string",
+        "required": true,
+        "label": "用户名"
+      },
+      {
+        "key": "password",
+        "type": "string",
+        "required": true,
+        "label": "密码"
+      }
+    ],
+    "user.ProfileEditDTO": [
+      {
+        "key": "userName",
+        "type": "string",
+        "required": true,
+        "label": "用户名"
+      },
+      {
+        "key": "oldPassword",
+        "type": "string",
+        "required": false,
+        "label": "原密码；与 newPassword 配对"
+      },
+      {
+        "key": "newPassword",
+        "type": "string",
+        "required": false,
+        "label": "新密码；与 oldPassword 配对"
+      }
+    ],
+    "user.SettingApiModelDTO": [
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "新增可省略；更新必传原 apiId"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": true,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": true,
+        "label": "模型类型"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": true,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiKey",
+        "type": "string",
+        "required": true,
+        "label": "API 密钥；展示和日志中应脱敏"
+      },
+      {
+        "key": "apiCompletionPath",
+        "type": "string",
+        "required": true,
+        "label": "对话路径（用户设置字段，单数 Completion）"
+      }
+    ],
+    "user.SettingMcpDTO": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": false,
+        "label": "新增可省略；更新必传原 mcpId"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": true,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": true,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": true,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": false,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpSecret",
+        "type": "string",
+        "required": false,
+        "label": "MCP 凭据字符串；返回不保证脱敏"
+      }
+    ],
+    "user.SettingTaskDTO": [
+      {
+        "key": "taskId",
+        "type": "string",
+        "required": false,
+        "label": "新增可省略；更新必传原 taskId"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "taskCron",
+        "type": "string",
+        "required": true,
+        "label": "Spring 六字段 Cron"
+      },
+      {
+        "key": "taskDesc",
+        "type": "string",
+        "required": true,
+        "label": "定时任务描述"
+      },
+      {
+        "key": "taskParam",
+        "type": "string",
+        "required": true,
+        "label": "JSON 字符串，含 maxRetry/maxRound/maxPace/userMessage"
+      },
+      {
+        "key": "taskStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "user.AuthVO": [
+      {
+        "key": "token",
+        "type": "string",
+        "required": false,
+        "label": "JWT；后续放入 Authorization 请求头"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "userRole",
+        "type": "string",
+        "required": false,
+        "label": "用户角色（user / admin）"
+      },
+      {
+        "key": "userAvatar",
+        "type": "string",
+        "required": false,
+        "label": "头像地址"
+      },
+      {
+        "key": "userStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "user.QueryChatClientVO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientName",
+        "type": "string",
+        "required": false,
+        "label": "客户端名称"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      }
+    ],
+    "user.QueryMcpVO": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": false,
+        "label": "MCP 标识"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": false,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": false,
+        "label": "MCP 描述"
+      }
+    ],
+    "user.QueryModelVO": [
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      }
+    ],
+    "user.QueryRagVO": [
+      {
+        "key": "ragTag",
+        "type": "string",
+        "required": false,
+        "label": "知识库标签"
+      }
+    ],
+    "user.QueryRoleVO": [
+      {
+        "key": "strategy",
+        "type": "string",
+        "required": false,
+        "label": "step / loop / react"
+      },
+      {
+        "key": "roleName",
+        "type": "string",
+        "required": false,
+        "label": "角色名称"
+      },
+      {
+        "key": "roleDesc",
+        "type": "string",
+        "required": false,
+        "label": "角色职责描述"
+      }
+    ],
+    "user.QueryWorkAgentVO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      }
+    ],
+    "user.UserApiModelVO": [
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": false,
+        "label": "模型类型"
+      },
+      {
+        "key": "apiKey",
+        "type": "string",
+        "required": false,
+        "label": "API 密钥；展示和日志中应脱敏"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": false,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiCompletionPath",
+        "type": "string",
+        "required": false,
+        "label": "对话路径（用户设置字段，单数 Completion）"
+      }
+    ],
+    "user.UserMcpVO": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": false,
+        "label": "MCP 标识"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": false,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": false,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": false,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": false,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpSecret",
+        "type": "string",
+        "required": false,
+        "label": "MCP 凭据字符串；返回不保证脱敏"
+      }
+    ],
+    "user.UserTaskVO": [
+      {
+        "key": "taskId",
+        "type": "string",
+        "required": false,
+        "label": "定时任务标识"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "taskCron",
+        "type": "string",
+        "required": false,
+        "label": "Spring 六字段 Cron"
+      },
+      {
+        "key": "taskDesc",
+        "type": "string",
+        "required": false,
+        "label": "定时任务描述"
+      },
+      {
+        "key": "taskParam",
+        "type": "string",
+        "required": false,
+        "label": "JSON 字符串，含 maxRetry/maxRound/maxPace/userMessage"
+      },
+      {
+        "key": "taskStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "session.MessageVO": [
+      {
+        "key": "messageContent",
+        "type": "string",
+        "required": false,
+        "label": "消息正文；work-sse 为 JSON 字符串"
+      },
+      {
+        "key": "messageRole",
+        "type": "string",
+        "required": false,
+        "label": "user / assistant"
+      },
+      {
+        "key": "messageType",
+        "type": "string",
+        "required": false,
+        "label": "chat / work-sse / work-answer"
+      },
+      {
+        "key": "messageSeq",
+        "type": "number（整数）",
+        "required": false,
+        "label": "会话、消息类型内的顺序号"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "session.SessionVO": [
+      {
+        "key": "sessionId",
+        "type": "string",
+        "required": false,
+        "label": "会话标识"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "sessionTitle",
+        "type": "string",
+        "required": false,
+        "label": "会话标题"
+      },
+      {
+        "key": "sessionType",
+        "type": "string",
+        "required": false,
+        "label": "chat / work"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "ai.AiArmoryDTO": [
+      {
+        "key": "armoryType",
+        "type": "string",
+        "required": true,
+        "label": "chat / work"
+      },
+      {
+        "key": "armoryId",
+        "type": "string",
+        "required": true,
+        "label": "chat 传 clientId；work 传 agentId"
+      }
+    ],
+    "ai.AiChatDTO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": true,
+        "label": "客户端标识"
+      },
+      {
+        "key": "userMessage",
+        "type": "string",
+        "required": true,
+        "label": "本次输入文本"
+      },
+      {
+        "key": "sessionId",
+        "type": "string",
+        "required": true,
+        "label": "会话标识"
+      },
+      {
+        "key": "mcpIdList",
+        "type": "array&lt;string&gt;",
+        "required": false,
+        "label": "MCP 标识数组"
+      },
+      {
+        "key": "ragTag",
+        "type": "string",
+        "required": false,
+        "label": "知识库标签"
+      },
+      {
+        "key": "temperature",
+        "type": "number",
+        "required": false,
+        "label": "未传时 0.6；DTO 无范围校验"
+      },
+      {
+        "key": "presencePenalty",
+        "type": "number",
+        "required": false,
+        "label": "未传时 0.0；DTO 无范围校验"
+      },
+      {
+        "key": "maxCompletionTokens",
+        "type": "number（整数）",
+        "required": false,
+        "label": "未传时 8192；DTO 无范围校验"
+      }
+    ],
+    "ai.AiUploadDTO": [
+      {
+        "key": "repoUrl",
+        "type": "string",
+        "required": false,
+        "label": "Git 仓库地址"
+      },
+      {
+        "key": "username",
+        "type": "string",
+        "required": false,
+        "label": "Git 凭据用户名（小写 username）"
+      },
+      {
+        "key": "password",
+        "type": "string",
+        "required": false,
+        "label": "Git 凭据密码或访问令牌"
+      }
+    ],
+    "ai.AiWorkDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": true,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "userMessage",
+        "type": "string",
+        "required": true,
+        "label": "本次输入文本"
+      },
+      {
+        "key": "sessionId",
+        "type": "string",
+        "required": true,
+        "label": "会话标识"
+      },
+      {
+        "key": "maxRound",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "循环推演最大轮数；执行 DTO 必填"
+      },
+      {
+        "key": "maxRetry",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "分步执行重试配置；执行 DTO 必填"
+      },
+      {
+        "key": "maxPace",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "单步推理最大步数；执行 DTO 必填"
+      }
+    ],
+    "ai.ExecuteResponseEntity": [
+      {
+        "key": "clientType",
+        "type": "string",
+        "required": false,
+        "label": "执行角色（如 PLANNER）；完成事件为 complete"
+      },
+      {
+        "key": "sectionType",
+        "type": "string",
+        "required": false,
+        "label": "阶段枚举，见对接指南"
+      },
+      {
+        "key": "sectionContent",
+        "type": "string",
+        "required": false,
+        "label": "阶段内容字符串；内部可能仍是 JSON 文本"
+      },
+      {
+        "key": "round",
+        "type": "number（整数）",
+        "required": false,
+        "label": "当前轮次，未使用时可为 null"
+      },
+      {
+        "key": "pace",
+        "type": "number（整数）",
+        "required": false,
+        "label": "当前步次，未使用时可为 null"
+      },
+      {
+        "key": "step",
+        "type": "number（整数）",
+        "required": false,
+        "label": "步骤号，未使用时可为 null"
+      },
+      {
+        "key": "timestamp",
+        "type": "number（整数）",
+        "required": false,
+        "label": "Unix 毫秒时间戳"
+      },
+      {
+        "key": "sessionId",
+        "type": "string",
+        "required": false,
+        "label": "会话标识"
+      }
+    ],
+    "workspace.AgentCreateDTO": [
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": true,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": true,
+        "label": "模型名称"
+      },
+      {
+        "key": "mcpIdSet",
+        "type": "array&lt;string&gt;",
+        "required": false,
+        "label": "MCP 标识数组，后端 Set 去重"
+      },
+      {
+        "key": "strategy",
+        "type": "string",
+        "required": true,
+        "label": "step / loop / react"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": true,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": true,
+        "label": "智能体职责描述"
+      }
+    ],
+    "workspace.AgentPublishDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "plazaTitle",
+        "type": "string",
+        "required": true,
+        "label": "发布标题"
+      },
+      {
+        "key": "plazaDesc",
+        "type": "string",
+        "required": true,
+        "label": "发布描述"
+      }
+    ],
+    "workspace.AgentUpdateBaseDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": true,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": true,
+        "label": "智能体职责描述"
+      }
+    ],
+    "workspace.AgentUpdateMcpDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "clientIdList",
+        "type": "array&lt;string&gt;",
+        "required": true,
+        "label": "要更新的客户端标识数组"
+      },
+      {
+        "key": "mcpIdList",
+        "type": "array&lt;string&gt;",
+        "required": false,
+        "label": "实际应传数组；[] 清空，null/省略会导致遍历异常"
+      }
+    ],
+    "workspace.AgentUpdateModelDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": true,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "clientIdList",
+        "type": "array&lt;string&gt;",
+        "required": true,
+        "label": "要更新的客户端标识数组"
+      }
+    ],
+    "workspace.AgentUpdateSystemPromptDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "promptId",
+        "type": "string",
+        "required": true,
+        "label": "系统提示词标识"
+      },
+      {
+        "key": "systemPrompt",
+        "type": "string",
+        "required": true,
+        "label": "系统提示词正文"
+      }
+    ],
+    "workspace.AgentUpdateUserPromptDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "flowId",
+        "type": "number（整数）",
+        "required": true,
+        "label": "流程数值 ID，来自 AgentVO.clientInfoList"
+      },
+      {
+        "key": "userPrompt",
+        "type": "string",
+        "required": true,
+        "label": "用户提示词模板"
+      }
+    ],
+    "workspace.PlazaCommentAreaDTO": [
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": true,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "20",
+        "label": "每页条数"
+      }
+    ],
+    "workspace.PlazaCommentDTO": [
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": true,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "commentContent",
+        "type": "string",
+        "required": true,
+        "label": "评论正文"
+      }
+    ],
+    "workspace.PlazaPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "sortBy",
+        "type": "string",
+        "required": false,
+        "label": "like / favor / comment；其他值按创建时间排序"
+      },
+      {
+        "key": "sortOrder",
+        "type": "string",
+        "required": false,
+        "label": "asc 升序；其他值降序"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "workspace.AgentVO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": false,
+        "label": "模型类型"
+      },
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": false,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiCompletionUrl",
+        "type": "string",
+        "required": false,
+        "label": "对话地址字段（保持后端原名）"
+      },
+      {
+        "key": "mcpInfoList",
+        "type": "array&lt;[workspace.AgentVO.McpInfo](#workspace-agentvo-mcpinfo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "clientInfoList",
+        "type": "array&lt;[workspace.AgentVO.ClientInfo](#workspace-agentvo-clientinfo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      }
+    ],
+    "workspace.AgentVO.McpInfo": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": false,
+        "label": "MCP 标识"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": false,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": false,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": false,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": false,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "mcpSecret",
+        "type": "string",
+        "required": false,
+        "label": "MCP 凭据字符串；返回不保证脱敏"
+      }
+    ],
+    "workspace.AgentVO.ClientInfo": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": false,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "promptId",
+        "type": "string",
+        "required": false,
+        "label": "系统提示词标识"
+      },
+      {
+        "key": "systemPrompt",
+        "type": "string",
+        "required": false,
+        "label": "系统提示词正文"
+      },
+      {
+        "key": "flowId",
+        "type": "number（整数）",
+        "required": false,
+        "label": "流程数值 ID，来自 AgentVO.clientInfoList"
+      },
+      {
+        "key": "userPrompt",
+        "type": "string",
+        "required": false,
+        "label": "用户提示词模板"
+      }
+    ],
+    "workspace.CommentVO": [
+      {
+        "key": "commentId",
+        "type": "string",
+        "required": false,
+        "label": "评论标识"
+      },
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": false,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": false,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "commentContent",
+        "type": "string",
+        "required": false,
+        "label": "评论正文"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "mine",
+        "type": "boolean",
+        "required": false,
+        "label": "是否为当前用户评论"
+      }
+    ],
+    "workspace.PlazaVO": [
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": false,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "plazaTitle",
+        "type": "string",
+        "required": false,
+        "label": "发布标题"
+      },
+      {
+        "key": "plazaDesc",
+        "type": "string",
+        "required": false,
+        "label": "发布描述"
+      },
+      {
+        "key": "likeCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "点赞数"
+      },
+      {
+        "key": "favorCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "收藏数"
+      },
+      {
+        "key": "commentCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "评论数"
+      },
+      {
+        "key": "liked",
+        "type": "boolean",
+        "required": false,
+        "label": "当前用户是否已点赞"
+      },
+      {
+        "key": "favored",
+        "type": "boolean",
+        "required": false,
+        "label": "当前用户是否已收藏"
+      },
+      {
+        "key": "commented",
+        "type": "boolean",
+        "required": false,
+        "label": "当前用户是否已评论"
+      },
+      {
+        "key": "forked",
+        "type": "boolean",
+        "required": false,
+        "label": "当前用户是否已 Fork"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "workspace.RepoVO": [
+      {
+        "key": "repoId",
+        "type": "string",
+        "required": false,
+        "label": "仓库条目标识"
+      },
+      {
+        "key": "repoType",
+        "type": "string",
+        "required": false,
+        "label": "self / fork / favor"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "workspace.TemplateVO": [
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "plazaTitle",
+        "type": "string",
+        "required": false,
+        "label": "发布标题"
+      },
+      {
+        "key": "plazaDesc",
+        "type": "string",
+        "required": false,
+        "label": "发布描述"
+      },
+      {
+        "key": "likeCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "点赞数"
+      },
+      {
+        "key": "favorCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "收藏数"
+      },
+      {
+        "key": "commentCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "评论数"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "apiUrl",
+        "type": "string",
+        "required": false,
+        "label": "模板展示的 API 地址"
+      },
+      {
+        "key": "apiCompletionUrl",
+        "type": "string",
+        "required": false,
+        "label": "对话地址字段（保持后端原名）"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": false,
+        "label": "模型类型"
+      },
+      {
+        "key": "mcpInfoList",
+        "type": "array&lt;[workspace.TemplateVO.McpInfo](#workspace-templatevo-mcpinfo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "clientInfoList",
+        "type": "array&lt;[workspace.TemplateVO.ClientInfo](#workspace-templatevo-clientinfo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      }
+    ],
+    "workspace.TemplateVO.McpInfo": [
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": false,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": false,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": false,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": false,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "requiredSecrets",
+        "type": "array&lt;string&gt;",
+        "required": false,
+        "label": "模板要求补充的凭据名称数组"
+      }
+    ],
+    "workspace.TemplateVO.ClientInfo": [
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": false,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "systemPrompt",
+        "type": "string",
+        "required": false,
+        "label": "系统提示词正文"
+      },
+      {
+        "key": "userPrompt",
+        "type": "string",
+        "required": false,
+        "label": "用户提示词模板"
+      }
+    ],
+    "admin.AdvisorManageDTO": [
+      {
+        "key": "advisorId",
+        "type": "string",
+        "required": true,
+        "label": "顾问标识"
+      },
+      {
+        "key": "advisorName",
+        "type": "string",
+        "required": true,
+        "label": "顾问名称"
+      },
+      {
+        "key": "advisorType",
+        "type": "string",
+        "required": true,
+        "label": "顾问类型"
+      },
+      {
+        "key": "advisorParam",
+        "type": "string",
+        "required": false,
+        "label": "顾问配置字符串"
+      }
+    ],
+    "admin.AdvisorPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.AgentListDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      }
+    ],
+    "admin.AgentManageDTO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": true,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": true,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": true,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "agentStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "admin.AgentPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.ApiManageDTO": [
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": true,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": true,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiKey",
+        "type": "string",
+        "required": true,
+        "label": "API 密钥；展示和日志中应脱敏"
+      },
+      {
+        "key": "apiCompletionsPath",
+        "type": "string",
+        "required": true,
+        "label": "对话路径（管理员字段，复数 Completions）"
+      },
+      {
+        "key": "apiEmbeddingsPath",
+        "type": "string",
+        "required": true,
+        "label": "嵌入路径"
+      }
+    ],
+    "admin.ApiPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.ClientManageDTO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": true,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientType",
+        "type": "string",
+        "required": true,
+        "label": "客户端类型"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": true,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": true,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": true,
+        "label": "模型名称"
+      },
+      {
+        "key": "clientName",
+        "type": "string",
+        "required": true,
+        "label": "客户端名称"
+      },
+      {
+        "key": "clientStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "admin.ClientPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "clientType",
+        "type": "string",
+        "required": false,
+        "label": "客户端类型"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": false,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.ConfigListDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "configType",
+        "type": "string",
+        "required": false,
+        "label": "prompt / mcp / advisor"
+      }
+    ],
+    "admin.ConfigManageDTO": [
+      {
+        "key": "originClientId",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "originConfigType",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "originConfigValue",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": true,
+        "label": "客户端标识"
+      },
+      {
+        "key": "configType",
+        "type": "string",
+        "required": true,
+        "label": "prompt / mcp / advisor"
+      },
+      {
+        "key": "configValue",
+        "type": "string",
+        "required": true,
+        "label": "关联配置标识"
+      },
+      {
+        "key": "configStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "admin.FlowManageDTO": [
+      {
+        "key": "originAgentId",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "originClientId",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": true,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": true,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "userPrompt",
+        "type": "string",
+        "required": true,
+        "label": "用户提示词模板"
+      },
+      {
+        "key": "flowSeq",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "执行顺序，从 1 开始"
+      }
+    ],
+    "admin.McpManageDTO": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": true,
+        "label": "MCP 标识"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": true,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": true,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": true,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": true,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpSecret",
+        "type": "string",
+        "required": false,
+        "label": "MCP 凭据字符串；返回不保证脱敏"
+      },
+      {
+        "key": "mcpTimeout",
+        "type": "number（整数）",
+        "required": true,
+        "label": "MCP 请求超时配置"
+      }
+    ],
+    "admin.McpPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.ModelManageDTO": [
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": true,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": true,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": true,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": true,
+        "label": "模型类型"
+      }
+    ],
+    "admin.ModelPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.PlazaManageDTO": [
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": true,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": true,
+        "label": "模板标识"
+      },
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": true,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": true,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": true,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "plazaTitle",
+        "type": "string",
+        "required": true,
+        "label": "发布标题"
+      },
+      {
+        "key": "plazaDesc",
+        "type": "string",
+        "required": true,
+        "label": "发布描述"
+      },
+      {
+        "key": "likeCount",
+        "type": "number（整数）",
+        "required": true,
+        "label": "点赞数"
+      },
+      {
+        "key": "favorCount",
+        "type": "number（整数）",
+        "required": true,
+        "label": "收藏数"
+      },
+      {
+        "key": "commentCount",
+        "type": "number（整数）",
+        "required": true,
+        "label": "评论数"
+      }
+    ],
+    "admin.PlazaPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "sortBy",
+        "type": "string",
+        "required": false,
+        "label": "like / favor / comment；其他值按创建时间排序"
+      },
+      {
+        "key": "sortOrder",
+        "type": "string",
+        "required": false,
+        "label": "asc 升序；其他值降序"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.PromptManageDTO": [
+      {
+        "key": "promptId",
+        "type": "string",
+        "required": true,
+        "label": "系统提示词标识"
+      },
+      {
+        "key": "promptName",
+        "type": "string",
+        "required": true,
+        "label": "提示词名称"
+      },
+      {
+        "key": "systenPrompt",
+        "type": "string",
+        "required": true,
+        "label": "后端写入字段的实际拼写（systen，不是 system）"
+      }
+    ],
+    "admin.PromptPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.TaskManageDTO": [
+      {
+        "key": "taskId",
+        "type": "string",
+        "required": true,
+        "label": "定时任务标识"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": true,
+        "label": "智能体标识"
+      },
+      {
+        "key": "taskCron",
+        "type": "string",
+        "required": true,
+        "label": "Spring 六字段 Cron"
+      },
+      {
+        "key": "taskDesc",
+        "type": "string",
+        "required": true,
+        "label": "定时任务描述"
+      },
+      {
+        "key": "taskParam",
+        "type": "string",
+        "required": true,
+        "label": "JSON 字符串，含 maxRetry/maxRound/maxPace/userMessage"
+      },
+      {
+        "key": "taskStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "admin.TaskPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.TemplateManageDTO": [
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": true,
+        "label": "模板标识"
+      },
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": true,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": true,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": true,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": true,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": true,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiCompletionUrl",
+        "type": "string",
+        "required": true,
+        "label": "对话地址字段（保持后端原名）"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": true,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": true,
+        "label": "模型类型"
+      },
+      {
+        "key": "snapshot",
+        "type": "string",
+        "required": true,
+        "label": "模板快照 JSON 字符串，原样保留"
+      }
+    ],
+    "admin.TemplatePageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.UserManageDTO": [
+      {
+        "key": "originUserName",
+        "type": "string",
+        "required": false,
+        "label": "更新前定位字段；变更对应键时传原值，省略时按新值定位"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": true,
+        "label": "用户名"
+      },
+      {
+        "key": "password",
+        "type": "string",
+        "required": true,
+        "label": "密码"
+      },
+      {
+        "key": "userRole",
+        "type": "string",
+        "required": true,
+        "label": "用户角色（user / admin）"
+      },
+      {
+        "key": "userAvatar",
+        "type": "string",
+        "required": true,
+        "label": "头像地址"
+      },
+      {
+        "key": "userStatus",
+        "type": "number（整数）",
+        "required": true,
+        "label": "0 禁用 / 1 启用"
+      }
+    ],
+    "admin.UserPageDTO": [
+      {
+        "key": "keyword",
+        "type": "string",
+        "required": false,
+        "label": "查询关键词"
+      },
+      {
+        "key": "userRole",
+        "type": "string",
+        "required": false,
+        "label": "用户角色（user / admin）"
+      },
+      {
+        "key": "pageNum",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "label": "页码，从 1 开始"
+      },
+      {
+        "key": "pageSize",
+        "type": "number（整数）",
+        "required": true,
+        "min": "1",
+        "max": "10",
+        "label": "每页条数"
+      }
+    ],
+    "admin.AdvisorVO": [
+      {
+        "key": "advisorId",
+        "type": "string",
+        "required": false,
+        "label": "顾问标识"
+      },
+      {
+        "key": "advisorName",
+        "type": "string",
+        "required": false,
+        "label": "顾问名称"
+      },
+      {
+        "key": "advisorType",
+        "type": "string",
+        "required": false,
+        "label": "顾问类型"
+      },
+      {
+        "key": "advisorParam",
+        "type": "string",
+        "required": false,
+        "label": "顾问配置字符串"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.AgentVO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "agentStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "agentFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.ApiVO": [
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": false,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiKey",
+        "type": "string",
+        "required": false,
+        "label": "API 密钥；展示和日志中应脱敏"
+      },
+      {
+        "key": "apiCompletionsPath",
+        "type": "string",
+        "required": false,
+        "label": "对话路径（管理员字段，复数 Completions）"
+      },
+      {
+        "key": "apiEmbeddingsPath",
+        "type": "string",
+        "required": false,
+        "label": "嵌入路径"
+      },
+      {
+        "key": "apiFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.ClientDetailVO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": false,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "client",
+        "type": "[admin.ClientVO](#admin-clientvo)",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "model",
+        "type": "[admin.ModelVO](#admin-modelvo)",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "api",
+        "type": "[admin.ApiVO](#admin-apivo)",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "mcpList",
+        "type": "array&lt;[admin.McpVO](#admin-mcpvo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "advisorList",
+        "type": "array&lt;[admin.AdvisorVO](#admin-advisorvo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      },
+      {
+        "key": "promptList",
+        "type": "array&lt;[admin.PromptVO](#admin-promptvo)&gt;",
+        "required": false,
+        "label": "对象或条目数组；结构见类型链接"
+      }
+    ],
+    "admin.ClientVO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientName",
+        "type": "string",
+        "required": false,
+        "label": "客户端名称"
+      },
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "clientFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "clientStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.ConfigVO": [
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "configType",
+        "type": "string",
+        "required": false,
+        "label": "prompt / mcp / advisor"
+      },
+      {
+        "key": "configValue",
+        "type": "string",
+        "required": false,
+        "label": "关联配置标识"
+      },
+      {
+        "key": "configStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.DashboardVO": [
+      {
+        "key": "countInfo",
+        "type": "[admin.DashboardVO.CountInfo](#admin-dashboardvo-countinfo)",
+        "required": false,
+        "label": "仪表盘计数对象"
+      },
+      {
+        "key": "graphInfo",
+        "type": "[admin.DashboardVO.GraphInfo](#admin-dashboardvo-graphinfo)",
+        "required": false,
+        "label": "仪表盘图表对象"
+      }
+    ],
+    "admin.DashboardVO.GraphInfo": [
+      {
+        "key": "messageLastWeek",
+        "type": "array&lt;[admin.DashboardVO.ChartValue](#admin-dashboardvo-chartvalue)&gt;",
+        "required": false,
+        "label": "最近 7 天消息数量"
+      },
+      {
+        "key": "messageLastMonth",
+        "type": "array&lt;[admin.DashboardVO.ChartValue](#admin-dashboardvo-chartvalue)&gt;",
+        "required": false,
+        "label": "最近 30 天消息数量"
+      },
+      {
+        "key": "workUsage",
+        "type": "object；Map&lt;String, List&lt;[admin.DashboardVO.BarValue](#admin-dashboardvo-barvalue)&gt;&gt;",
+        "required": false,
+        "label": "按配置维度分组的 work 用量"
+      },
+      {
+        "key": "chatUsage",
+        "type": "object；Map&lt;String, List&lt;[admin.DashboardVO.BarValue](#admin-dashboardvo-barvalue)&gt;&gt;",
+        "required": false,
+        "label": "按配置维度分组的 chat 用量"
+      },
+      {
+        "key": "sessionWorkVsChat",
+        "type": "[admin.DashboardVO.PieValue](#admin-dashboardvo-pievalue)",
+        "required": false,
+        "label": "工作/聊天会话计数"
+      }
+    ],
+    "admin.DashboardVO.CountInfo": [
+      {
+        "key": "apiCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "api 记录数"
+      },
+      {
+        "key": "modelCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "model 记录数"
+      },
+      {
+        "key": "clientCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "client 记录数"
+      },
+      {
+        "key": "agentCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "agent 记录数"
+      },
+      {
+        "key": "promptCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "prompt 记录数"
+      },
+      {
+        "key": "advisorCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "advisor 记录数"
+      },
+      {
+        "key": "mcpCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "mcp 记录数"
+      },
+      {
+        "key": "configCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "config 记录数"
+      },
+      {
+        "key": "flowCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "flow 记录数"
+      },
+      {
+        "key": "userCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "user 记录数"
+      },
+      {
+        "key": "sessionCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "session 记录数"
+      },
+      {
+        "key": "messageCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "message 记录数"
+      },
+      {
+        "key": "taskCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "task 记录数"
+      },
+      {
+        "key": "plazaCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "plaza 记录数"
+      }
+    ],
+    "admin.DashboardVO.ChartValue": [
+      {
+        "key": "date",
+        "type": "string",
+        "required": false,
+        "label": "日期字符串"
+      },
+      {
+        "key": "count",
+        "type": "number（整数）",
+        "required": false,
+        "label": "计数"
+      }
+    ],
+    "admin.DashboardVO.BarValue": [
+      {
+        "key": "id",
+        "type": "string",
+        "required": false,
+        "label": "维度标识"
+      },
+      {
+        "key": "value",
+        "type": "number（整数）",
+        "required": false,
+        "label": "数值"
+      }
+    ],
+    "admin.DashboardVO.PieValue": [
+      {
+        "key": "workCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "工作会话数量"
+      },
+      {
+        "key": "chatCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "聊天会话数量"
+      }
+    ],
+    "admin.FlowVO": [
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "clientId",
+        "type": "string",
+        "required": false,
+        "label": "客户端标识"
+      },
+      {
+        "key": "clientRole",
+        "type": "string",
+        "required": false,
+        "label": "执行角色标识"
+      },
+      {
+        "key": "userPrompt",
+        "type": "string",
+        "required": false,
+        "label": "用户提示词模板"
+      },
+      {
+        "key": "flowSeq",
+        "type": "number（整数）",
+        "required": false,
+        "label": "执行顺序，从 1 开始"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.McpVO": [
+      {
+        "key": "mcpId",
+        "type": "string",
+        "required": false,
+        "label": "MCP 标识"
+      },
+      {
+        "key": "mcpName",
+        "type": "string",
+        "required": false,
+        "label": "MCP 名称"
+      },
+      {
+        "key": "mcpType",
+        "type": "string",
+        "required": false,
+        "label": "sse / stdio"
+      },
+      {
+        "key": "mcpParam",
+        "type": "string",
+        "required": false,
+        "label": "配置的 JSON 字符串，格式见对接指南"
+      },
+      {
+        "key": "mcpSecret",
+        "type": "string",
+        "required": false,
+        "label": "MCP 凭据字符串；返回不保证脱敏"
+      },
+      {
+        "key": "mcpDesc",
+        "type": "string",
+        "required": false,
+        "label": "MCP 描述"
+      },
+      {
+        "key": "mcpTimeout",
+        "type": "number（整数）",
+        "required": false,
+        "label": "MCP 请求超时配置"
+      },
+      {
+        "key": "mcpFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.ModelVO": [
+      {
+        "key": "modelId",
+        "type": "string",
+        "required": false,
+        "label": "模型配置标识；与 clientId 不同"
+      },
+      {
+        "key": "apiId",
+        "type": "string",
+        "required": false,
+        "label": "API 配置标识"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": false,
+        "label": "模型类型"
+      },
+      {
+        "key": "modelFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.PlazaVO": [
+      {
+        "key": "plazaId",
+        "type": "string",
+        "required": false,
+        "label": "广场条目标识"
+      },
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": false,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "plazaTitle",
+        "type": "string",
+        "required": false,
+        "label": "发布标题"
+      },
+      {
+        "key": "plazaDesc",
+        "type": "string",
+        "required": false,
+        "label": "发布描述"
+      },
+      {
+        "key": "likeCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "点赞数"
+      },
+      {
+        "key": "favorCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "收藏数"
+      },
+      {
+        "key": "commentCount",
+        "type": "number（整数）",
+        "required": false,
+        "label": "评论数"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.PromptVO": [
+      {
+        "key": "promptId",
+        "type": "string",
+        "required": false,
+        "label": "系统提示词标识"
+      },
+      {
+        "key": "promptName",
+        "type": "string",
+        "required": false,
+        "label": "提示词名称"
+      },
+      {
+        "key": "systemPrompt",
+        "type": "string",
+        "required": false,
+        "label": "系统提示词正文"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.SessionVO": [
+      {
+        "key": "sessionId",
+        "type": "string",
+        "required": false,
+        "label": "会话标识"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "sessionTitle",
+        "type": "string",
+        "required": false,
+        "label": "会话标题"
+      },
+      {
+        "key": "sessionType",
+        "type": "string",
+        "required": false,
+        "label": "chat / work"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.TaskVO": [
+      {
+        "key": "taskId",
+        "type": "string",
+        "required": false,
+        "label": "定时任务标识"
+      },
+      {
+        "key": "agentId",
+        "type": "string",
+        "required": false,
+        "label": "智能体标识"
+      },
+      {
+        "key": "taskCron",
+        "type": "string",
+        "required": false,
+        "label": "Spring 六字段 Cron"
+      },
+      {
+        "key": "taskDesc",
+        "type": "string",
+        "required": false,
+        "label": "定时任务描述"
+      },
+      {
+        "key": "taskParam",
+        "type": "string",
+        "required": false,
+        "label": "JSON 字符串，含 maxRetry/maxRound/maxPace/userMessage"
+      },
+      {
+        "key": "taskStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "taskFrom",
+        "type": "number（整数）",
+        "required": false,
+        "label": "来源用户的数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.TemplateVO": [
+      {
+        "key": "templateId",
+        "type": "string",
+        "required": false,
+        "label": "模板标识"
+      },
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": false,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "agentName",
+        "type": "string",
+        "required": false,
+        "label": "智能体名称"
+      },
+      {
+        "key": "agentType",
+        "type": "string",
+        "required": false,
+        "label": "策略类型（step / loop / react）"
+      },
+      {
+        "key": "agentDesc",
+        "type": "string",
+        "required": false,
+        "label": "智能体职责描述"
+      },
+      {
+        "key": "apiBaseUrl",
+        "type": "string",
+        "required": false,
+        "label": "模型服务基础地址"
+      },
+      {
+        "key": "apiCompletionUrl",
+        "type": "string",
+        "required": false,
+        "label": "对话地址字段（保持后端原名）"
+      },
+      {
+        "key": "modelName",
+        "type": "string",
+        "required": false,
+        "label": "模型名称"
+      },
+      {
+        "key": "modelType",
+        "type": "string",
+        "required": false,
+        "label": "模型类型"
+      },
+      {
+        "key": "snapshot",
+        "type": "string",
+        "required": false,
+        "label": "模板快照 JSON 字符串，原样保留"
+      },
+      {
+        "key": "createTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "创建时间；LocalDateTime，无时区偏移"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ],
+    "admin.UserVO": [
+      {
+        "key": "userId",
+        "type": "number（整数）",
+        "required": false,
+        "label": "用户数值 ID"
+      },
+      {
+        "key": "userName",
+        "type": "string",
+        "required": false,
+        "label": "用户名"
+      },
+      {
+        "key": "userRole",
+        "type": "string",
+        "required": false,
+        "label": "用户角色（user / admin）"
+      },
+      {
+        "key": "userAvatar",
+        "type": "string",
+        "required": false,
+        "label": "头像地址"
+      },
+      {
+        "key": "userStatus",
+        "type": "number（整数）",
+        "required": false,
+        "label": "0 禁用 / 1 启用"
+      },
+      {
+        "key": "updateTime",
+        "type": "string（ISO 日期时间）",
+        "required": false,
+        "label": "更新时间；LocalDateTime，无时区偏移"
+      }
+    ]
+  }
+}
