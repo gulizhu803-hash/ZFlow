@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" compressed="false">
+  <diagram id="order-architecture" name="订单系统架构">
+    <mxGraphModel dx="806" dy="610" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F0FE;strokeColor=#7B9AC4;fontSize=16;" value="订单服务（编辑验证）" vertex="1">
+          <mxGeometry height="70" width="140" x="80" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="order-service" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E7F3EA;strokeColor=#6B9676;fontSize=16;" value="订单服务" vertex="1">
+          <mxGeometry height="70" width="180" x="350" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="mysql" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF3D6;strokeColor=#C8A960;fontSize=16;" value="MySQL" vertex="1">
+          <mxGeometry height="70" width="160" x="690" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FBE9E7;strokeColor=#C98E83;fontSize=16;" value="Redis" vertex="1">
+          <mxGeometry height="70" width="160" x="690" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="user-to-order" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#667085;fontSize=13;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="order-service" value="提交订单">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="order-to-mysql" edge="1" parent="1" source="order-service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#667085;fontSize=13;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" target="mysql" value="订单持久化">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="order-to-redis" edge="1" parent="1" source="order-service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;strokeColor=#667085;fontSize=13;exitX=1;exitY=0.75;entryX=0;entryY=0.5;" target="redis" value="缓存读写">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

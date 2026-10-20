@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zgl.zflow.infrastructure.persistent.dao.IOfficeDao">
+    <resultMap id="Run" type="com.zgl.zflow.domain.office.model.OfficeRun">
+        <id column="id" property="id"/>
+        <result column="run_id" property="runId"/>
+        <result column="owner_id" property="ownerId"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="idempotency_key" property="idempotencyKey"/>
+        <result column="request_hash" property="requestHash"/>
+        <result column="request_snapshot" property="requestSnapshot"/>
+        <result column="retry_of_run_id" property="retryOfRunId"/>
+        <result column="status" property="status"/>
+        <result column="stage" property="stage"/>
+        <result column="last_event_seq" property="lastEventSeq"/>
+        <result column="trace_id" property="traceId"/>
+        <result column="model_snapshot" property="modelSnapshot"/>
+        <result column="model_attempt_count" property="modelAttemptCount"/>
+        <result column="generation_receipt" property="generationReceipt"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="deadline_at" property="deadlineAt"/>
+        <result column="cancel_requested_at" property="cancelRequestedAt"/>
+        <result column="finished_at" property="finishedAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+    <resultMap id="Artifact" type="com.zgl.zflow.domain.office.model.OfficeArtifact">
+        <id column="id" property="id"/>
+        <result column="artifact_id" property="artifactId"/>
+        <result column="owner_id" property="ownerId"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="artifact_type" property="artifactType"/>
+        <result column="title" property="title"/>
+        <result column="current_version" property="currentVersion"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+    <resultMap id="Revision" type="com.zgl.zflow.domain.office.model.OfficeRevision">
+        <id column="id" property="id"/>
+        <result column="revision_id" property="revisionId"/>
+        <result column="artifact_id" property="artifactId"/>
+        <result column="version" property="version"/>
+        <result column="base_version" property="baseVersion"/>
+        <result column="save_request_key" property="saveRequestKey"/>
+        <result column="save_request_hash" property="saveRequestHash"/>
+        <result column="run_id" property="runId"/>
+        <result column="output_key" property="outputKey"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="object_key" property="objectKey"/>
+        <result column="content_hash" property="contentHash"/>
+        <result column="content_type" property="contentType"/>
+        <result column="size_bytes" property="sizeBytes"/>
+        <result column="structured_content" property="structuredContent"/>
+        <result column="source_snapshot" property="sourceSnapshot"/>
+        <result column="validation_report" property="validationReport"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+    <resultMap id="Event" type="com.zgl.zflow.domain.office.model.OfficeEvent">
+        <id column="id" property="id"/>
+        <result column="run_id" property="runId"/>
+        <result column="seq" property="seq"/>
+        <result column="event_type" property="eventType"/>
+        <result column="schema_version" property="schemaVersion"/>
+        <result column="payload" property="payload"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+    <resultMap id="Session" type="com.zgl.zflow.domain.office.model.OfficeSession">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="ownerId"/>
+        <result column="session_title" property="title"/>
+        <result column="create_time" property="createdAt"/>
+        <result column="update_time" property="updatedAt"/>
+    </resultMap>
+    <select id="now" resultType="java.time.LocalDateTime">
+        SELECT UTC_TIMESTAMP(3)
+    </select>
+    <select id="lockUser" resultType="long">
+        SELECT id FROM ai_user WHERE id = #{ownerId} FOR UPDATE
+    </select>
+    <select id="session" resultMap="Session">
+        SELECT * FROM ai_session WHERE user_id = #{ownerId} AND session_id = #{sessionId} AND session_type = 'office'
+    </select>
+    <select id="lockSession" resultMap="Session">
+        SELECT * FROM ai_session WHERE user_id = #{ownerId} AND session_id = #{sessionId} AND session_type = 'office' FOR UPDATE
+    </select>
+    <insert id="insertSession">
+        INSERT INTO ai_session (session_id,user_id,session_title,session_type,create_time,update_time) VALUES (#{sessionId},#{ownerId},#{title},'office',#{createdAt},#{updatedAt})
+    </insert>
+    <delete id="deleteSession">
+        DELETE FROM ai_session WHERE user_id=#{ownerId} AND session_id=#{sessionId} AND session_type='office'
+    </delete>
+    <select id="sessions" resultMap="Session">
+        SELECT * FROM ai_session WHERE user_id=#{ownerId} AND session_type='office' ORDER BY create_time DESC,id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="countSessions" resultType="long">
+        SELECT COUNT(*) FROM ai_session WHERE user_id=#{ownerId} AND session_type='office'
+    </select>
+    <select id="countSessionReferences" resultType="long">
+        SELECT (SELECT COUNT(*) FROM ai_office_run WHERE session_id=#{sessionId}) + (SELECT COUNT(*) FROM ai_artifact WHERE session_id=#{sessionId})
+    </select>
+    <select id="run" resultMap="Run">
+        SELECT * FROM ai_office_run WHERE owner_id=#{ownerId} AND run_id=#{runId}
+    </select>
+    <select id="lockRun" resultMap="Run">
+        SELECT * FROM ai_office_run WHERE run_id=#{runId} FOR UPDATE
+    </select>
+    <select id="findRequest" resultMap="Run">
+        SELECT * FROM ai_office_run WHERE owner_id=#{ownerId} AND idempotency_key=#{key}
+    </select>
+    <select id="runs" resultMap="Run">
+        SELECT * FROM ai_office_run WHERE owner_id=#{ownerId} AND session_id=#{sessionId} ORDER BY created_at DESC,id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="countRuns" resultType="long">
+        SELECT COUNT(*) FROM ai_office_run WHERE owner_id=#{ownerId} AND session_id=#{sessionId}
+    </select>
+    <select id="artifacts" resultMap="Artifact">
+        SELECT * FROM ai_artifact WHERE owner_id=#{ownerId} AND session_id=#{sessionId} ORDER BY created_at DESC,id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="countArtifacts" resultType="long">
+        SELECT COUNT(*) FROM ai_artifact WHERE owner_id=#{ownerId} AND session_id=#{sessionId}
+    </select>
+    <select id="activeRuns" resultType="long">
+        SELECT COUNT(*) FROM ai_office_run WHERE owner_id=#{ownerId} AND status IN ('QUEUED','RUNNING','CANCEL_REQUESTED')
+    </select>
+    <insert id="insertRun">
+        INSERT INTO ai_office_run (run_id,owner_id,session_id,idempotency_key,request_hash,request_snapshot,retry_of_run_id,status,stage,last_event_seq,trace_id,model_snapshot,model_attempt_count,generation_receipt,error_code,error_message,started_at,deadline_at,cancel_requested_at,finished_at,created_at,updated_at)
+        VALUES (#{runId},#{ownerId},#{sessionId},#{idempotencyKey},#{requestHash},#{requestSnapshot},#{retryOfRunId},#{status},#{stage},#{lastEventSeq},#{traceId},#{modelSnapshot},#{modelAttemptCount},#{generationReceipt},#{errorCode},#{errorMessage},#{startedAt},#{deadlineAt},#{cancelRequestedAt},#{finishedAt},#{createdAt},#{updatedAt})
+    </insert>
+    <insert id="insertArtifact">
+        INSERT INTO ai_artifact (artifact_id,owner_id,session_id,artifact_type,title,current_version,created_at,updated_at)
+        VALUES (#{artifactId},#{ownerId},#{sessionId},#{artifactType},#{title},#{currentVersion},#{createdAt},#{updatedAt})
+    </insert>
+    <insert id="insertRevision">
+        INSERT INTO ai_artifact_revision (revision_id,artifact_id,version,base_version,save_request_key,save_request_hash,run_id,output_key,created_by,object_key,content_hash,content_type,size_bytes,structured_content,source_snapshot,validation_report,created_at)
+        VALUES (#{revisionId},#{artifactId},#{version},#{baseVersion},#{saveRequestKey},#{saveRequestHash},#{runId},#{outputKey},#{createdBy},#{objectKey},#{contentHash},#{contentType},#{sizeBytes},#{structuredContent},#{sourceSnapshot},#{validationReport},#{createdAt})
+    </insert>
+    <insert id="insertEvent">
+        INSERT INTO ai_office_run_event (run_id,seq,event_type,schema_version,payload,created_at)
+        VALUES (#{runId},#{seq},#{eventType},#{schemaVersion},#{payload},#{createdAt})
+    </insert>
+    <update id="updateRun">
+        UPDATE ai_office_run SET status=#{status},stage=#{stage},last_event_seq=#{lastEventSeq},model_attempt_count=#{modelAttemptCount},generation_receipt=#{generationReceipt},error_code=#{errorCode},error_message=#{errorMessage},started_at=#{startedAt},deadline_at=#{deadlineAt},cancel_requested_at=#{cancelRequestedAt},finished_at=#{finishedAt}, updated_at=UTC_TIMESTAMP(3) WHERE run_id=#{runId}
+    </update>
+    <select id="queued" resultType="string">
+        SELECT run_id FROM ai_office_run WHERE status='QUEUED' ORDER BY created_at,id LIMIT #{limit}
+    </select>
+    <select id="unfinished" resultType="string">
+        SELECT run_id FROM ai_office_run WHERE status IN ('RUNNING','CANCEL_REQUESTED')
+    </select>
+    <select id="expired" resultType="string">
+        SELECT run_id FROM ai_office_run WHERE
+        (status='QUEUED' AND created_at &lt;= TIMESTAMPADD(SECOND,-#{queueWait},UTC_TIMESTAMP(3))) OR
+        (status='RUNNING' AND deadline_at &lt;= UTC_TIMESTAMP(3)) OR
+        (status='CANCEL_REQUESTED' AND cancel_requested_at &lt;= TIMESTAMPADD(SECOND,-#{cancelGrace},UTC_TIMESTAMP(3)))
+    </select>
+    <select id="events" resultMap="Event">
+        SELECT e.* FROM ai_office_run_event e JOIN ai_office_run r ON r.run_id=e.run_id
+        WHERE r.owner_id=#{ownerId} AND e.run_id=#{runId} AND e.seq &gt; #{afterSeq} AND e.seq &lt;= #{waterMark} ORDER BY e.seq LIMIT 100
+    </select>
+    <select id="artifact" resultMap="Artifact">
+        SELECT * FROM ai_artifact WHERE owner_id=#{ownerId} AND artifact_id=#{artifactId}
+    </select>
+    <select id="lockArtifact" resultMap="Artifact">
+        SELECT * FROM ai_artifact WHERE owner_id=#{ownerId} AND artifact_id=#{artifactId} FOR UPDATE
+    </select>
+    <update id="advanceVersion">
+        UPDATE ai_artifact SET current_version=#{version},updated_at=UTC_TIMESTAMP(3) WHERE owner_id=#{ownerId} AND artifact_id=#{artifactId} AND current_version=#{baseVersion}
+    </update>
+    <select id="revision" resultMap="Revision">
+        SELECT v.* FROM ai_artifact_revision v JOIN ai_artifact a ON a.artifact_id=v.artifact_id WHERE a.owner_id=#{ownerId} AND v.artifact_id=#{artifactId} AND v.version=#{version}
+    </select>
+    <select id="findSave" resultMap="Revision">
+        SELECT v.* FROM ai_artifact_revision v JOIN ai_artifact a ON a.artifact_id=v.artifact_id WHERE a.owner_id=#{ownerId} AND v.artifact_id=#{artifactId} AND v.save_request_key=#{key}
+    </select>
+    <select id="revisions" resultMap="Revision">
+        SELECT v.* FROM ai_artifact_revision v JOIN ai_artifact a ON a.artifact_id=v.artifact_id WHERE a.owner_id=#{ownerId} AND v.artifact_id=#{artifactId} ORDER BY v.version DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="countRevisions" resultType="long">
+        SELECT COUNT(*) FROM ai_artifact_revision v JOIN ai_artifact a ON a.artifact_id=v.artifact_id WHERE a.owner_id=#{ownerId} AND v.artifact_id=#{artifactId}
+    </select>
+    <select id="runRevisions" resultMap="Revision">
+        SELECT v.* FROM ai_artifact_revision v JOIN ai_artifact a ON a.artifact_id=v.artifact_id WHERE a.owner_id=#{ownerId} AND v.run_id=#{runId}
+    </select>
+    <select id="objectKeys" resultType="string">
+        SELECT object_key FROM ai_artifact_revision
+    </select>
+</mapper>

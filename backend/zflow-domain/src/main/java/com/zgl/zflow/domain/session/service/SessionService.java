@@ -37,14 +37,29 @@ public class SessionService implements ISessionService {
     @Resource
     private IRandomUtil randomUtil;
 
+    @Resource
+    private org.springframework.beans.factory.ObjectProvider<com.zgl.zflow.domain.office.service.OfficeSessionService> officeSessions;
+
+    private com.zgl.zflow.domain.office.service.OfficeSessionService office() {
+        var service = officeSessions.getIfAvailable();
+        if (service == null) throw new com.zgl.zflow.types.exception.OfficeException(503, "OFFICE_DISABLED", "办公模块尚未启用");
+        return service;
+    }
+
     @Override
     public List<SessionVO> listSession() {
-        return sessionRepository.listSession(requireUserId());
+        return sessionRepository.listSession(requireUserId()).stream()
+                .filter(session -> !"office".equals(session.getSessionType())).toList();
     }
 
     @Override
     public SessionVO insertSession(String sessionTitle, String sessionType) {
         Long userId = requireUserId();
+        if ("office".equals(sessionType)) {
+            var session = office().create(userId, sessionTitle);
+            return SessionVO.builder().sessionId(session.getSessionId()).sessionTitle(session.getTitle())
+                    .sessionType("office").userName(userContext.getUserName()).createTime(session.getCreatedAt()).build();
+        }
         if (!CHAT.getType().equals(sessionType) && !WORK.getType().equals(sessionType)) {
             throw new SessionException("会话类型必须为 chat 或 work");
         }
@@ -74,7 +89,11 @@ public class SessionService implements ISessionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteSession(String sessionId) {
-        requireSession(sessionId);
+        SessionVO session = requireSession(sessionId);
+        if ("office".equals(session.getSessionType())) {
+            office().delete(requireUserId(), sessionId);
+            return;
+        }
         Long userId = requireUserId();
         if (!userId.equals(requireOwnerId(sessionId))) {
             throw new SessionException(SESSION_NO_PERMISSION_UPDATE);

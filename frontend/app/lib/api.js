@@ -1,5 +1,5 @@
 import { ApiError, checkResponse, consumeSSE, stringifyJSON } from './protocol.js';
-const configured = import.meta.env.VITE_API_ROOT || import.meta.env.VITE_API_BASE || '/miniagent';
+const configured = import.meta.env?.VITE_API_ROOT || import.meta.env?.VITE_API_BASE || '/miniagent';
 export const API_ROOT = configured.replace(/\/$/, '').replace(/\/api\/v1$/, '') + '/api/v1';
 const AUTH_KEY = 'miniagent.studio.auth';
 export function readAuth() { try { return JSON.parse(sessionStorage.getItem(AUTH_KEY)) || null; } catch { return null; } }
@@ -15,8 +15,9 @@ async function request(path, { json, query, form, signal, stream = false } = {})
   catch (error) { if (error.name === 'AbortError') throw error; throw new ApiError('无法连接服务，请确认后端已启动且地址配置正确'); }
 }
 async function guard(operation) {
+  const token = readAuth()?.token;
   try { return await operation(); }
-  catch (error) { if (error.status === 401) { saveAuth(null); window.dispatchEvent(new Event('miniagent:unauthorized')); } throw error; }
+  catch (error) { if (error.status === 401 && token === readAuth()?.token) { saveAuth(null); window.dispatchEvent(new Event('miniagent:unauthorized')); } throw error; }
 }
 export function post(path, options) { return guard(async () => checkResponse(await request(path, options))); }
 export function stream(path, json, onEvent, signal) { return guard(async () => consumeSSE(await request(path, { json, stream: true, signal }), onEvent)); }

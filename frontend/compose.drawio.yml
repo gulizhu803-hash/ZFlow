@@ -1,0 +1,6 @@
+services:
+  drawio:
+    # Official image pinned to the version used for browser verification.
+    image: jgraph/drawio@sha256:30fefe1cf6e48c78f8816cdcd969d0a402a6bfd5077252cf5bb0428fd8ceaf69
+    ports:
+      - "127.0.0.1:18765:8080"

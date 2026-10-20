@@ -1,0 +1,143 @@
+# M1 后端手工测试请求，配套 TESTING.md 第 6–7 节。
+# 默认直连端口 8066；按实际启动日志或代理入口调整。
+# 使用真实登录 Token；Bearer 1 只在自动化测试上下文有效。
+# 把真实凭据放 HTTP 客户端私有变量，不提交到仓库。
+# 每轮换新 sessionId 和三个幂等键；同一动作重放时保持键和正文。
+# 逐条运行并复制响应 ID，不要直接执行全部。
+@baseUrl = http://127.0.0.1:8066/miniagent/api/v1
+@token = REPLACE_WITH_REAL_LOGIN_TOKEN
+@otherToken = REPLACE_WITH_OTHER_USER_OR_ADMIN_TOKEN
+@sessionId = REPLACE_FROM_SESSION_RESPONSE
+@runId = REPLACE_FROM_RUN_RESPONSE
+@artifactId = REPLACE_FROM_SUCCESSFUL_RUN
+@runKey = office-smoke-run-0001
+@saveKey = office-smoke-save-0001
+@staleSaveKey = office-smoke-stale-0001
+
+### S01 创建会话：201，body.code=200；复制 data.sessionId
+POST {{baseUrl}}/office/sessions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"title":"订单架构测试"}
+
+### S02 会话列表：200；仅本人 office 会话
+GET {{baseUrl}}/office/sessions?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### S03/S04 生成与原请求重放：首次 202；重复 200/replayed=true/runId 相同
+# 复制 data.runId。重放不修改本段任何字段。
+POST {{baseUrl}}/office/runs
+Authorization: Bearer {{token}}
+Idempotency-Key: {{runKey}}
+Content-Type: application/json
+
+{
+  "sessionId":"{{sessionId}}",
+  "prompt":"画一个订单系统架构图，包含用户、订单服务、MySQL 和 Redis。",
+  "artifactTypes":["DRAWIO"],
+  "diagramType":"ARCHITECTURE",
+  "title":"订单系统架构图"
+}
+
+### S05 查询状态与 receipt：等待 SUCCEEDED 后复制 data.artifacts[0].artifactId
+# fixture: attemptCount=0，attempts=[]，knownUsage 全部 null，usageComplete=false。
+GET {{baseUrl}}/office/runs/{{runId}}?includeReceipt=true
+Authorization: Bearer {{token}}
+
+### S06 从起点回放；也可把 0 换成刚收到的实际中间 seq
+# 不固定断言事件总数；任务终态且追平后连接结束。
+GET {{baseUrl}}/office/runs/{{runId}}/events?afterSeq=0
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+
+### S07 产物详情：currentVersion=1；完成保存后重新执行则为 2
+GET {{baseUrl}}/office/artifacts/{{artifactId}}
+Authorization: Bearer {{token}}
+
+### S07 读取 v1：200 application/xml，原始 XML 不带 Result 包装
+GET {{baseUrl}}/office/artifacts/{{artifactId}}/content?version=1
+Authorization: Bearer {{token}}
+
+### S07/S12 下载 v1：保存 v2 前后各下载一次到不同文件，比较 SHA-256
+GET {{baseUrl}}/office/artifacts/{{artifactId}}/download?version=1
+Authorization: Bearer {{token}}
+
+### S08/S09 保存与原保存重放：首次 201/v2；重复 200/v2/replayed=true
+# save-v1.json 为固定订单图编辑样例，只用于本次 fixture 冒烟。
+# 若客户端不支持文件正文，粘贴同目录 JSON 的完整内容。
+POST {{baseUrl}}/office/artifacts/{{artifactId}}/revisions
+Authorization: Bearer {{token}}
+Idempotency-Key: {{saveKey}}
+Content-Type: application/json
+
+< ./save-v1.json
+
+### S10 旧窗口保存：新键但仍 baseVersion=1，409 ARTIFACT_VERSION_CONFLICT/currentVersion=2
+POST {{baseUrl}}/office/artifacts/{{artifactId}}/revisions
+Authorization: Bearer {{token}}
+Idempotency-Key: {{staleSaveKey}}
+Content-Type: application/json
+
+< ./save-v1.json
+
+### S11 历史：v2 为 MANUAL，v1 为 GENERATED
+GET {{baseUrl}}/office/artifacts/{{artifactId}}/revisions?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### S12 当前 v2 含“订单服务（已编辑）”；原 v1 标签不变
+GET {{baseUrl}}/office/artifacts/{{artifactId}}/content?version=2
+Authorization: Bearer {{token}}
+
+### S13 取消已成功任务：200/SUCCEEDED；这不能验证运行中取消
+POST {{baseUrl}}/office/runs/{{runId}}/cancel
+Authorization: Bearer {{token}}
+
+### S14 旧入口删除非空办公会话：409 OFFICE_SESSION_NOT_EMPTY
+POST {{baseUrl}}/session/delete?sessionId={{sessionId}}
+Authorization: Bearer {{token}}
+
+### S15 历史任务：200；生成 run 的 artifacts 引用原 v1
+GET {{baseUrl}}/office/runs?sessionId={{sessionId}}&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### S15 会话文件列表：200；该 artifact.currentVersion=2
+GET {{baseUrl}}/office/artifacts?sessionId={{sessionId}}&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### B02 原 runKey 改正文：409 IDEMPOTENCY_KEY_REUSED；先完成 S03
+POST {{baseUrl}}/office/runs
+Authorization: Bearer {{token}}
+Idempotency-Key: {{runKey}}
+Content-Type: application/json
+
+{
+  "sessionId":"{{sessionId}}",
+  "prompt":"这是一条不同的输入",
+  "artifactTypes":["DRAWIO"],
+  "diagramType":"ARCHITECTURE",
+  "title":"订单系统架构图"
+}
+
+### B08 错误布尔值：400 INVALID_REQUEST
+GET {{baseUrl}}/office/runs/{{runId}}?includeReceipt=yes
+Authorization: Bearer {{token}}
+
+### B10 无效 XML：422 INVALID_DIAGRAM_XML，validationReport.valid=false，不产生 v3
+POST {{baseUrl}}/office/artifacts/{{artifactId}}/revisions
+Authorization: Bearer {{token}}
+Idempotency-Key: office-smoke-invalid-xml
+Content-Type: application/json
+
+{"baseVersion":2,"xml":"<invalid/>"}
+
+### F02 无效 SSE 游标：400 INVALID_EVENT_CURSOR
+GET {{baseUrl}}/office/runs/{{runId}}/events?afterSeq=-1
+Authorization: Bearer {{token}}
+
+### A01 另一用户或管理员读 A 的文件：404 OFFICE_RESOURCE_NOT_FOUND
+GET {{baseUrl}}/office/artifacts/{{artifactId}}/download?version=1
+Authorization: Bearer {{otherToken}}
+
+### A04 不携带 Token：HTTP 401；body 沿用旧鉴权 Result，见 TESTING.md
+GET {{baseUrl}}/office/sessions

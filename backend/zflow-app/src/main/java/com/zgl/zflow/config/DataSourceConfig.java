@@ -26,6 +26,13 @@ import javax.sql.DataSource;
 @EnableConfigurationProperties({MySQLProperties.class, PostgreSQLProperties.class, HikariDataSourceProperties.class})
 public class DataSourceConfig {
 
+    @Bean(name = {"transactionManager", "mysqlTransactionManager"})
+    @Primary
+    public org.springframework.jdbc.support.JdbcTransactionManager mysqlTransactionManager(
+            @Qualifier("mysqlDataSource") DataSource dataSource) {
+        return new org.springframework.jdbc.support.JdbcTransactionManager(dataSource);
+    }
+
     /**
      * MySQL DataSource
      */

@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
 import java.io.IOException;
 import java.util.Set;
@@ -21,7 +21,7 @@ import static com.zgl.zflow.domain.admin.model.enumeration.UserRole.ADMIN;
 
 @Slf4j
 @Component
-public class AuthInterceptor implements HandlerInterceptor {
+public class AuthInterceptor implements AsyncHandlerInterceptor {
 
     private static final Set<String> WHITE_LIST = Set.of(
             "/miniagent/api/v1/actuator/health",
@@ -37,6 +37,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        userContext.clear();
         String uri = request.getRequestURI();
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
@@ -79,13 +80,20 @@ public class AuthInterceptor implements HandlerInterceptor {
         userContext.clear();
     }
 
+    @Override
+    public void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        userContext.clear();
+    }
+
     private boolean unauthorized(HttpServletResponse response, String message) throws IOException {
+        userContext.clear();
         Result<Void> body = Result.error(message);
         writeResponse(response, HttpStatus.UNAUTHORIZED.value(), body);
         return false;
     }
 
     private boolean forbidden(HttpServletResponse response, String message) throws IOException {
+        userContext.clear();
         Result<Void> body = Result.error(message);
         writeResponse(response, HttpStatus.FORBIDDEN.value(), body);
         return false;

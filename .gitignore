@@ -57,6 +57,8 @@ dist/
 
 # ==================== Local workspace only ====================
 /.codegraph/
+/.playwright-cli/
+/output/playwright/
 /导学-ZFlow.md
 /面经-ZFlow.md
 /assets/

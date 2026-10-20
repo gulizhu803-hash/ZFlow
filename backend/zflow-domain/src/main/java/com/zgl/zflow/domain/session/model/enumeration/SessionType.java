@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 public enum SessionType {
 
     CHAT("chat", "Chat"),
-    WORK("work", "Work");
+    WORK("work", "Work"),
+    OFFICE("office", "Office");
 
     private String type;
 
