@@ -50,7 +50,7 @@ datasource:
     maximum-pool-size: 25
     idle-timeout: 180000
     max-lifetime: 1800000
-    connection-timeout: 30000
+    connection-timeout: 5000
     connection-test-query: SELECT 1
     initialization-fail-timeout: 1
 
