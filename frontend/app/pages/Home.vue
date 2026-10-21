@@ -41,8 +41,21 @@ const todayItems = computed(() => {
     items.push({ key: 'run', kind: 'run', live: true, actionable: true, title: run.prompt || '正在执行任务', meta: `${runStatusText.value} · ${typeLabel(runSession.value?.sessionType || 'work')}` });
   }
   if (isDemo.value && !run) {
-    for (const session of recentSessions.value.slice(0, 3)) items.push({ key: 'demo-' + session.id, kind: 'recent', icon: sessionIcon(session.type), actionable: true, title: session.title, meta: `演示 · ${typeLabel(session.type)} · ${shortTime(session.createdAt)}`, session });
-    return items.slice(0, 3);
+    const sessions = recentSessions.value;
+    const latestRun = sessions.find(session => session.type === 'work');
+    if (latestRun) {
+      items.push({ key: 'demo-run', kind: 'recent', icon: 'play', actionable: true, title: latestRun.title, meta: `演示 · 最近运行 · ${typeLabel(latestRun.type)} · ${shortTime(latestRun.createdAt)}`, session: latestRun });
+    } else {
+      items.push({ key: 'demo-run', kind: 'run', empty: true, title: '今天还没有运行记录', meta: '从上方输入框开始第一个任务' });
+    }
+    items.push({ key: 'demo-schedule', kind: 'schedule', actionable: true, title: '每日灵感简报', meta: '演示 · 每天 09:00' });
+    const second = sessions[1] && sessions[1].id !== latestRun?.id ? sessions[1] : sessions.find(session => session.id !== latestRun?.id);
+    if (second) {
+      items.push({ key: 'demo-recent', kind: 'recent', icon: sessionIcon(second.type), actionable: true, title: second.title, meta: `演示 · ${typeLabel(second.type)} · ${shortTime(second.createdAt)}`, session: second });
+    } else {
+      items.push({ key: 'demo-recent', kind: 'recent', empty: true, title: '还没有更多最近会话', meta: '从上方输入框开始第一个任务' });
+    }
+    return items;
   }
   if (!run) items.push({ key: 'run', kind: 'run', empty: true, title: '没有正在运行的任务', meta: '提交任务后，进度会出现在这里' });
   items.push({ key: 'schedule', kind: 'schedule', empty: true, actionable: true, title: '今天没有定时安排', meta: '在定时任务里安排重复工作' });
