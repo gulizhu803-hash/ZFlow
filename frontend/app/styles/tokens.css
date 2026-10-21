@@ -1,0 +1,113 @@
+/* Quiet Canvas 2.0 tokens — P1 stage 1.
+   Imported after styles.css; old pages keep working through aliases. */
+:root {
+  color-scheme: light dark;
+
+  --z-canvas: #FAFAF7;
+  --z-paper: #FFFFFF;
+  --z-paper-2: #F3F3EF;
+  --z-fill: #EAEAE5;
+
+  --z-ink: #17171A;
+  --z-ink-2: #5F5F64;
+  --z-ink-3: #6B6B70;
+  --z-ink-4: #9A9AA0;
+
+  --z-line: rgba(23, 23, 26, .08);
+  --z-line-strong: rgba(23, 23, 26, .16);
+
+  --z-blue: #0A66FF;
+  --z-blue-fill: #0A66FF;
+  --z-blue-hover: #2E7BFF;
+  --z-blue-press: #0052D6;
+  --z-blue-soft: rgba(10, 102, 255, .08);
+  --z-on-blue: #FFFFFF;
+
+  --z-green: #1E7A34;
+  --z-orange: #B25000;
+  --z-red: #D70015;
+  --z-green-fill: #34C759;
+
+  --z-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --z-serif: ui-serif, "New York", "Iowan Old Style", Georgia, "Songti SC", serif;
+  --z-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --z-space-1: 4px;  --z-space-2: 8px;  --z-space-3: 12px;
+  --z-space-4: 16px; --z-space-5: 20px; --z-space-6: 24px;
+  --z-space-7: 32px; --z-space-8: 40px; --z-space-9: 48px;
+  --z-space-10: 64px; --z-space-11: 80px; --z-space-12: 96px;
+
+  --z-r-stage: 28px; --z-r-surface: 20px; --z-r-card: 14px;
+  --z-r-control: 10px; --z-r-chip: 8px; --z-r-capsule: 999px;
+
+  --z-rail: 72px; --z-sidebar: 248px; --z-thread: 680px;
+  --z-thread-wide: 720px; --z-wide: 920px;
+  --z-context: 320px; --z-inspector: 360px;
+  --z-content: 1200px; --z-topbar: 52px; --z-tabbar: 52px;
+
+  --z-glass: rgba(250, 250, 247, .78);
+  --z-glass-blur: saturate(160%) blur(18px);
+
+  --z-shadow-1: 0 1px 2px rgba(23, 23, 26, .04);
+  --z-shadow-2: 0 18px 50px rgba(23, 23, 26, .08);
+  --z-shadow-3: 0 28px 80px rgba(23, 23, 26, .16);
+  --z-focus: 0 0 0 4px rgba(10, 102, 255, .14);
+
+  --z-dur-fast: 120ms; --z-dur-base: 220ms;
+  --z-dur-slow: 340ms; --z-dur-mode: 420ms;
+  --z-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --z-ease-spring: cubic-bezier(.32, .72, 0, 1);
+
+  --z-spectrum: linear-gradient(125deg, #0A66FF 0%, #7B61FF 48%, #00C2D1 100%);
+
+  /* Compatibility aliases: old components keep their variable names. */
+  --ink: var(--z-ink);
+  --muted: var(--z-ink-2);
+  --green: var(--z-blue-fill);
+  --lime: var(--z-blue-soft);
+  --line: var(--z-line);
+  --surface: var(--z-paper);
+  --sage: var(--z-blue-soft);
+  --peach: rgba(123, 97, 255, .10);
+  --lavender: rgba(0, 194, 209, .10);
+  --shadow: var(--z-shadow-2);
+
+  font-family: var(--z-sans);
+  color: var(--z-ink);
+  background: var(--z-canvas);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --z-canvas: #0B0B0F;
+    --z-paper: #151518;
+    --z-paper-2: #1E1E22;
+    --z-fill: #2A2A2F;
+
+    --z-ink: #F2F2F5;
+    --z-ink-2: #B4B4BA;
+    --z-ink-3: #9A9AA0;
+    --z-ink-4: #6E6E73;
+
+    --z-line: rgba(255, 255, 255, .12);
+    --z-line-strong: rgba(255, 255, 255, .20);
+
+    --z-blue: #6EA8FF;
+    --z-blue-fill: #0A66FF;
+    --z-blue-soft: rgba(110, 168, 255, .14);
+
+    --z-green: #30D158;
+    --z-orange: #FF9F0A;
+    --z-red: #FF453A;
+
+    --z-glass: rgba(21, 21, 24, .82);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --z-glass: var(--z-paper);
+    --z-glass-blur: none;
+  }
+}
