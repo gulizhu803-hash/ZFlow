@@ -31,14 +31,14 @@ function makeTransport(overrides = {}) {
 function makeHarness({ now = () => 0, transport } = {}) {
   const store = createRunStore({ now });
   const t = transport || makeTransport();
-  const collected = { user: [], token: [], stage: [], session: [] };
+  const collected = { user: [], token: [], stage: [], session: [], stageMeta: [], tokenMeta: [] };
   const adapter = createConversationAdapter({
     store,
     transport: t,
     now,
     onUserMessage: m => collected.user.push(m),
-    onToken: d => collected.token.push(d),
-    onStage: s => collected.stage.push(s),
+    onToken: (d, meta) => { collected.token.push(d); collected.tokenMeta.push(meta); },
+    onStage: (s, meta) => { collected.stage.push(s); collected.stageMeta.push(meta); },
     onSession: s => collected.session.push(s)
   });
   return { store, adapter, transport: t, collected };
@@ -406,4 +406,22 @@ test('16. chat Stop 后流正常 resolve：stopped，不 complete', async () => 
 
   assert.equal(store.getState().status, STATUS.STOPPED);
   assert.notEqual(store.getState().status, STATUS.COMPLETED);
+});
+test('17. 回调携带 runId/sessionId，页面重建后可过滤旧 run', async () => {
+  const { store, adapter, collected } = makeHarness({
+    transport: makeTransport({
+      streamWork: ({ sessionId }, onEvent) => {
+        onEvent({ event: 'message', data: '{"clientType":"RUNNER","sectionType":"runner_result"}' });
+        onEvent({ event: 'complete', data: '{"clientType":"complete"}' });
+        return Promise.resolve();
+      }
+    })
+  });
+
+  await adapter.send({ mode: 'work', agentId: 'a1', prompt: '任务' });
+  const runId = store.getState().runId;
+
+  assert.equal(collected.stageMeta.length, 1);
+  assert.equal(collected.stageMeta[0].runId, runId);
+  assert.equal(collected.stageMeta[0].sessionId, 's1');
 });

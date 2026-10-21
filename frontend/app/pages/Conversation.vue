@@ -10,7 +10,7 @@ import { parseJSON } from '../lib/protocol.js';
 import { strategies, sectionLabels } from '../lib/demo.js';
 import { createConversationAdapter } from '../../ui-v2-p0/src/conversation-adapter.js';
 import { deriveUi } from '../../ui-v2-p0/src/run-state.js';
-import { useRunStore } from '../lib/use-run-store.js';
+import { useRunStore, subscribeRunEvents, emitRunEvent } from '../lib/use-run-store.js';
 const work = computed(() => state.route.page === 'work'), type = computed(() => work.value ? 'work' : 'chat');
 const messages = ref([]), events = ref([]), input = ref(state.draft), activeId = ref(''), loading = ref(false);
 state.draft = '';
@@ -33,12 +33,13 @@ const storeRunVisible = computed(() => {
   if (!activeId.value) return true;
   return !s.sessionId || s.sessionId === activeId.value;
 });
+const otherRunActive = computed(() => Boolean(runState.value.runId) && ['preparing', 'running', 'stopping'].includes(runState.value.status) && !storeRunVisible.value);
 const historyViewStatus = ref('idle');
 const historyError = ref('');
 // store 状态 → 模板既有的 pill CSS class（不改样式，复用既有 class）。
 const STORE_TO_PILL = { idle: 'idle', preparing: 'running', running: 'running', stopping: 'stopped', stopped: 'stopped', completed: 'complete', failed: 'failed', unknown: 'unknown' };
 const busy = computed(() => storeRunVisible.value && deriveUi(runState.value).showPill);
-const canSend = computed(() => input.value.trim() && deriveUi(runState.value).canSend && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
+const canSend = computed(() => input.value.trim() && deriveUi(runState.value).canSend && !otherRunActive.value && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
 const status = computed(() => storeRunVisible.value ? (STORE_TO_PILL[runState.value.status] || 'idle') : historyViewStatus.value);
 const statusText = computed(() => {
   if (storeRunVisible.value) {
@@ -125,28 +126,62 @@ const transport = {
   }
 };
 
-const adapter = createConversationAdapter({
-  store,
-  transport,
-  parse: parseJSON,
-  onUserMessage: m => {
-    if (!alive || !liveRunActive.value) return;
-    messages.value.push({ messageRole: 'user', messageContent: m.content, messageSeq: messages.value.length + 1 });
+let pendingRunEvents = [];
+
+function runEventBelongsToView(event) {
+  const meta = event?.meta || {};
+  // 旧 run / 旧账号的迟到事件，不能在当前 store 上显示。
+  if (meta.runId && meta.runId !== runState.value.runId) return false;
+  // 切到会话 B 时，不能把会话 A 的 token 追加到 B。
+  if (meta.sessionId && activeId.value && meta.sessionId !== activeId.value) return false;
+  return true;
+}
+
+function handleRunEvent(event) {
+  if (!alive || !event || !runEventBelongsToView(event)) return;
+  if (loading.value) { pendingRunEvents.push(event); return; } // 历史还没回来，先排队
+  if (event.type === 'user') {
+    const message = event.payload || {};
+    messages.value.push({ messageRole: 'user', messageContent: message.content || '', messageSeq: messages.value.length + 1 });
     if (!work.value) messages.value.push({ messageRole: 'assistant', messageContent: '', messageSeq: messages.value.length + 1 });
     input.value = ''; scrollBottom();
-  },
-  onToken: data => {
-    if (!alive || !liveRunActive.value) return;
-    const last = messages.value[messages.value.length - 1];
-    if (last && last.messageRole === 'assistant') { last.messageContent += data; scrollBottom(); }
-  },
-  onStage: stage => {
-    if (!alive || !liveRunActive.value) return;
+    return;
+  }
+  if (event.type === 'token') {
+    let last = messages.value[messages.value.length - 1];
+    if (!last || last.messageRole !== 'assistant') {
+      last = { messageRole: 'assistant', messageContent: '', messageSeq: messages.value.length + 1 };
+      messages.value.push(last);
+    }
+    last.messageContent += event.payload || '';
+    scrollBottom();
+    return;
+  }
+  if (event.type === 'stage') {
+    const stage = event.payload || {};
     const entity = stage.raw && typeof stage.raw === 'object' ? stage.raw : { sectionType: stage.sectionType, clientType: stage.clientType, round: stage.round, step: stage.step, sectionContent: stage.content };
     events.value.push(entity);
     if (['summarizer_overview', 'replier_overview', 'evaluator_overview'].includes(entity.sectionType)) messages.value.push({ messageRole: 'assistant', messageContent: entity.sectionContent, messageSeq: messages.value.length + 1 });
     scrollBottom();
   }
+}
+
+function flushPendingRunEvents() {
+  const pending = pendingRunEvents;
+  pendingRunEvents = [];
+  pending.forEach(handleRunEvent);
+}
+
+const unsubscribeRunEvents = subscribeRunEvents(handleRunEvent);
+
+const adapter = createConversationAdapter({
+  store,
+  transport,
+  parse: parseJSON,
+  onUserMessage: (m, meta) => emitRunEvent({ type: 'user', payload: m, meta }),
+  onToken: (data, meta) => emitRunEvent({ type: 'token', payload: data, meta }),
+  onStage: (stage, meta) => emitRunEvent({ type: 'stage', payload: stage, meta }),
+  onSession: (session, meta) => emitRunEvent({ type: 'session', payload: session, meta })
 });
 
 // demo 会话在 run 进入终态时落盘，保证切走再切回能看到演示历史。
@@ -175,7 +210,7 @@ async function loadSession(id) {
   const ticket = ++historyRequest;
   activeId.value = id || ''; messages.value = []; events.value = []; historyError.value = ''; loading.value = true;
   liveRunActive.value = false; historyViewStatus.value = 'idle';
-  if (!id) { resetRunIfNotActive(); loading.value = false; return; }
+  if (!id) { resetRunIfNotActive(); loading.value = false; flushPendingRunEvents(); return; }
   try {
     const result = await adapter.loadHistory({ mode: type.value, sessionId: id });
     if (ticket !== historyRequest || !alive) return;
@@ -187,7 +222,7 @@ async function loadSession(id) {
   } catch (error) {
     if (ticket === historyRequest && alive) historyError.value = error.message;
   } finally {
-    if (ticket === historyRequest) loading.value = false;
+    if (ticket === historyRequest) { loading.value = false; flushPendingRunEvents(); }
   }
 }
 watch(() => state.route.params.session, id => loadSession(id), { immediate: true });
@@ -198,6 +233,7 @@ function chooseSession(session) { nav(type.value, { session: session.sessionId, 
 function newSession() { if (!state.route.params.session) loadSession(); else nav(type.value, { agent: agentId.value }); }
 async function send() {
   if (!canSend.value) return;
+  if (otherRunActive.value) { notify('另一个会话的任务仍在运行，请先切回该会话停止或等待完成', 'info'); return; }
   if (work.value && ![maxRound.value, maxRetry.value, maxPace.value].every(n => Number.isInteger(n) && n >= 1)) { notify('执行参数必须为正整数', 'info'); return; }
   if (!activeId.value && sessions.value.length >= 3) { notify('每种类型最多保留 3 个会话，请选择已有会话或删除一个旧会话', 'info'); return; }
   const prompt = input.value.trim();
@@ -211,7 +247,7 @@ async function send() {
 async function saveTitle() { try { const target = rename.value; if (!sessionTitle.value.trim()) return; if (!isDemo.value) await post('/session/update', { query: { sessionId: target.sessionId, sessionTitle: sessionTitle.value.trim() } }); target.sessionTitle = sessionTitle.value.trim(); rename.value = null; notify('会话名称已更新'); } catch (error) { report(error); } }
 async function removeSession() { try { const id = deleteTarget.value.sessionId; if (!isDemo.value) await post('/session/delete', { query: { sessionId: id } }); state.sessions = state.sessions.filter(s => s.sessionId !== id); deleteTarget.value = null; if (activeId.value === id) { nav(type.value); loadSession(); } notify('会话已删除'); } catch (error) { report(error); } }
 async function copy(text) { try { await navigator.clipboard.writeText(text); notify('已复制回复'); } catch { notify('无法访问剪贴板，请选择文本复制', 'info'); } }
-onBeforeUnmount(() => { alive = false; historyRequest++; });
+onBeforeUnmount(() => { alive = false; historyRequest++; pendingRunEvents = []; unsubscribeRunEvents(); });
 </script>
 <template>
   <div class="conversation-layout">
@@ -220,7 +256,7 @@ onBeforeUnmount(() => { alive = false; historyRequest++; });
       <div class="mobile-conversation-tools"><select :value="activeId" aria-label="切换会话" @change="nav(type, { session: $event.target.value, agent: agentId })"><option value="">新会话</option><option v-for="session in sessions" :key="session.sessionId" :value="session.sessionId">{{ session.sessionTitle }}</option></select><button class="text-button" @click="newSession"><Icon name="plus" :size="16" />新会话</button></div><div ref="scrollPane" class="conversation-scroll" aria-live="polite" aria-relevant="additions text"><div v-if="loading" class="loading-placeholder">正在加载会话…</div><div v-else-if="!messages.length" class="conversation-welcome"><span class="welcome-flower">✳</span><span class="eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</span><h2>{{ work ? '你的下一个目标，是什么？' : '今天，想从哪里开始？' }}</h2><p>{{ work ? '研究一个问题，打磨一篇文章，或探索一个项目。' : '让零散的想法在对话中，慢慢变得清晰。' }}</p><div class="prompt-suggestions"><button v-for="suggestion in (work ? ['研究 AI Agent 的产品设计趋势', '为我的新项目整理一份行动计划', '分析并优化这篇文章的结构'] : ['帮我拆解一个复杂的概念', '一起头脑风暴下一个好点子', '如何更高效地整理学习笔记？'])" :key="suggestion" @click="input = suggestion"><Icon :name="work ? 'workflow' : 'chat'" :size="17" />{{ suggestion }}<Icon name="arrow" :size="16" /></button></div></div>
         <div v-if="work && events.length" class="execution-log"><div class="row spread"><h3><Icon name="workflow" :size="17" />执行过程 <span>{{ events.length }} 个阶段</span></h3><span class="status-pill" :class="status">{{ statusText }}</span></div><details v-for="(event, index) in events" :key="index" :open="index === events.length - 1 && busy"><summary><span class="stage-number">{{ String(index + 1).padStart(2, '0') }}</span><span>{{ sectionLabels[event.sectionType] || event.sectionType || event.clientType || '阶段输出' }}</span><small v-if="event.round">第 {{ event.round }} 轮</small><small v-if="event.step">步骤 {{ event.step }}</small><Icon name="down" :size="14" /></summary><pre>{{ event.sectionContent }}</pre></details></div>
         <div v-if="messages.length && !loading" class="message-list"><article v-for="(message, index) in messages" :key="activeId + ':' + (message.messageType || type) + ':' + (message.messageSeq || index)" class="message" :class="message.messageRole"><span class="message-avatar"><Icon v-if="message.messageRole !== 'user'" name="sparkles" :size="18" /><template v-else>{{ state.auth?.userName?.slice(0,1) || '我' }}</template></span><div class="message-content"><div class="message-author">{{ message.messageRole === 'user' ? '你' : 'ZFlow' }}<span v-if="message.messageRole !== 'user' && isDemo" class="tag sage">演示回复</span></div><div v-if="message.messageRole === 'user'" class="user-content">{{ message.messageContent }}</div><div v-else-if="message.messageContent" class="markdown" v-html="html(message.messageContent)"></div><span v-else class="typing-indicator">正在思考<span>•••</span></span><button v-if="message.messageRole !== 'user' && message.messageContent" class="icon-button" aria-label="复制回复" @click="copy(message.messageContent)"><Icon name="copy" :size="14" /></button></div></article></div>
-        <div v-if="errorText" class="form-error conversation-error" role="alert">{{ errorText }}</div><div v-if="status === 'unknown' && !errorText" class="info-note warning conversation-error">已断开前端连接，后台任务可能继续执行。可以重新打开会话查看历史，请勿重复提交同一任务。</div>
+        <div v-if="errorText" class="form-error conversation-error" role="alert">{{ errorText }}</div><div v-if="status === 'unknown' && !errorText" class="info-note warning conversation-error">已断开前端连接，后台任务可能继续执行。可以重新打开会话查看历史，请勿重复提交同一任务。</div><div v-if="otherRunActive" class="info-note warning conversation-error">另一个会话的任务仍在运行。请切回该会话停止，或等待完成后再发送。</div>
       </div>
       <div class="conversation-compose"><div v-if="optionsOpen" class="compose-options"><template v-if="work"><label v-for="(_, i) in 3" :key="i">{{ ['最大轮次', '最大重试', '最大步数'][i] }}<input v-if="i === 0" v-model.number="maxRound" type="number" min="1" :disabled="busy" /><input v-else-if="i === 1" v-model.number="maxRetry" type="number" min="1" :disabled="busy" /><input v-else v-model.number="maxPace" type="number" min="1" :disabled="busy" /></label></template><template v-else><label>关联知识库<select v-model="ragTag" :disabled="busy"><option value="">不使用知识库</option><option v-for="rag in state.rags" :key="rag.ragTag" :value="rag.ragTag">{{ rag.ragTag }}</option></select></label><div class="tool-checkboxes"><label v-for="mcp in state.mcps" :key="mcp.mcpId" class="checkbox-line"><input v-model="mcpIds" type="checkbox" :value="mcp.mcpId" :disabled="busy" />{{ mcp.mcpName }}</label><span v-if="!state.mcps.length">暂无可用工具</span></div></template></div>
         <div v-if="userCount >= maxMessages" class="info-note warning">本会话已达到 {{ maxMessages }} 条用户消息，请创建或切换会话。</div><form class="chat-composer" @submit.prevent="send"><textarea v-model="input" :placeholder="work ? '描述你的目标，剩下的我们一起完成…' : '把你的想法写在这里…'" aria-label="消息内容" rows="3" :disabled="busy || loading || userCount >= maxMessages" @keydown.enter.exact="event => { if (!event.isComposing) { event.preventDefault(); send(); } }" /><div class="composer-bottom"><div class="row"><select v-if="work" v-model="agentId" class="composer-select" aria-label="选择执行智能体" :disabled="busy"><option v-if="!state.agents.length" value="">暂无可用智能体</option><option v-for="agent in state.agents" :key="agent.agentId" :value="agent.agentId">{{ agent.agentName }}</option></select><select v-else v-model="clientId" class="composer-select" aria-label="选择对话客户端" :disabled="busy"><option v-if="!state.clients.length" value="">暂无可用对话客户端</option><option v-for="client in state.clients" :key="client.clientId" :value="client.clientId">{{ client.clientName }} · {{ client.modelName }}</option></select><button type="button" class="icon-button" aria-label="会话选项" :aria-expanded="optionsOpen" @click="optionsOpen = !optionsOpen"><Icon name="settings" :size="17" /></button></div><button v-if="busy" type="button" class="send-button" aria-label="停止接收" @click="stop"><Icon name="stop" :size="15" /></button><button v-else class="send-button" type="submit" aria-label="发送消息" :disabled="!canSend || (work && [maxRound,maxRetry,maxPace].some(n => !Number.isInteger(n) || n < 1))"><Icon name="up" :size="19" /></button></div></form><div class="composer-hint"><span>{{ isDemo ? '当前为界面演示，登录后使用真实 AI 服务。' : work ? '断开连接不会保证停止后台任务。' : 'AI 可能会出错，请核实重要信息。' }}</span><span>Enter 发送 · Shift Enter 换行</span></div>

@@ -53,7 +53,7 @@ export function createConversationAdapter({
     return { status, messages, stages };
   }
 
-  function handleWorkEvent(runId, event) {
+  function handleWorkEvent(runId, sessionId, event) {
     if (activeRunId !== runId) return; // 迟到事件（stop 后 / 旧 run）直接丢弃。
     if (!event || typeof event !== 'object') return;
     // Stop 之后不再把阶段推给 UI，也不让 fail/complete 改状态。
@@ -88,7 +88,7 @@ export function createConversationAdapter({
     }
     const stage = normalizeStage(entity, now());
     store.stage(runId, stage);
-    if (onStage) onStage(stage);
+    if (onStage) onStage(stage, { runId, sessionId });
   }
 
   async function send(request = {}) {
@@ -118,9 +118,9 @@ export function createConversationAdapter({
         return { runId, sessionId };
       }
       store.prepared(runId, sessionId);
-      if (onSession) onSession({ sessionId });
+      if (onSession) onSession({ sessionId }, { runId });
       // 只有在 prepare 成功后，才确认用户消息被接受。
-      if (onUserMessage) onUserMessage({ role: 'user', content: prompt });
+      if (onUserMessage) onUserMessage({ role: 'user', content: prompt }, { runId, sessionId });
 
       if (mode === 'work') {
         await transport.streamWork({
@@ -131,7 +131,7 @@ export function createConversationAdapter({
           maxRetry: request.maxRetry,
           maxPace: request.maxPace,
           signal
-        }, event => handleWorkEvent(runId, event));
+        }, event => handleWorkEvent(runId, sessionId, event));
         // stream resolve：complete 已在事件里处理；这里只处理「EOF 无 complete」。
         // 如果用户已 Stop 但流没有以 AbortError 结束，必须落 stopped，不能卡在 stopping。
         if (store.getState().stopRequested) store.stopped(runId);
@@ -157,7 +157,7 @@ export function createConversationAdapter({
             store.stage(runId, normalizeStage({ sectionType: 'stream', label: '回复' }, now()));
           }
           // chat 的 token 是文本片段，绝不当成 work 的阶段 JSON。
-          if (onToken) onToken(data);
+          if (onToken) onToken(data, { runId, sessionId });
         });
         if (store.getState().stopRequested) store.stopped(runId);
         else store.complete(runId);
