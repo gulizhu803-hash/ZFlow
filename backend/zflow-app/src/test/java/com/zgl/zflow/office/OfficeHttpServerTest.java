@@ -45,6 +45,7 @@ class OfficeHttpServerTest {
                     .replaceAll("(?s)CREATE DATABASE IF NOT EXISTS `ai-agent`.*?;","").replace("USE `ai-agent`;","");
             ScriptUtils.executeSqlScript(connection,new ByteArrayResource(baseline.getBytes(StandardCharsets.UTF_8)));
             ScriptUtils.executeSqlScript(connection,new FileSystemResource("../docs/mysql/03-office-artifacts.sql"));
+            ScriptUtils.executeSqlScript(connection,new FileSystemResource("../docs/mysql/04-office-lease.sql"));
             try(var s=connection.createStatement()){
                 s.execute("DELETE FROM ai_session");s.execute("DELETE FROM ai_user");
                 s.execute("INSERT INTO ai_user(id,user_name,password,user_role) VALUES (1,'http-owner','test','account')");

@@ -29,6 +29,8 @@ public class OfficeQueueDispatcher implements OfficeWorkerControl {
     private final Set<String> scheduled=ConcurrentHashMap.newKeySet();
     private final Map<String,WorkerHandle> workers=new ConcurrentHashMap<>();
     private final Set<String> interrupted=ConcurrentHashMap.newKeySet();
+    /** 本实例的身份：写入任务的 owner_instance，并用心跳表明自己还活着。 */
+    private final String instanceId="office-"+UUID.randomUUID().toString().replace("-","").substring(0,8);
     private volatile boolean ready;
     public OfficeQueueDispatcher(IOfficeRepository repository,OfficeTransactions transactions,OfficeRunExecutor runner,
             @Qualifier("officeTaskExecutor") ThreadPoolTaskExecutor executor,IArtifactStorage storage,OfficeSettings settings) {
@@ -36,11 +38,17 @@ public class OfficeQueueDispatcher implements OfficeWorkerControl {
     }
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
-        if(settings.isRecoverOnStart())
-            for(String id:repository.unfinished())transactions.recover(id);
-        log.info("office startup orphanFiles={} recoverOnStart={}",storage.countOrphans(new HashSet<>(repository.objectKeys())),settings.isRecoverOnStart());
+        // 只回收租约已经过期的任务；仍在心跳的同伴任务不会被误杀
+        int reclaimed=transactions.recoverExpired(settings.getLeaseTimeoutSeconds());
+        log.info("office startup instance={} orphanFiles={} reclaimed={}",instanceId,storage.countOrphans(new HashSet<>(repository.objectKeys())),reclaimed);
         ready=true;
     }
+    @Scheduled(fixedDelayString="${zflow.office.heartbeat-interval-ms:15000}")
+    public void heartbeat() {
+        if(!ready)return;
+        try{transactions.heartbeat(instanceId);}catch(Exception e){log.warn("office heartbeat failed instance={}",instanceId);}
+    }
+    public String instanceId(){return instanceId;}
     @Scheduled(fixedDelayString="${zflow.office.dispatch-interval-ms:1000}")
     public void dispatch() {
         if(!ready)return;
@@ -50,7 +58,7 @@ public class OfficeQueueDispatcher implements OfficeWorkerControl {
                 executor.execute(()->{
                     WorkerHandle handle=new WorkerHandle(Thread.currentThread());
                     workers.put(id,handle);
-                    try{runner.execute(id);}
+                    try{runner.execute(id, instanceId);}
                     catch(Exception e){log.warn("office worker failed runId={} errorKey=OFFICE_INTERNAL_ERROR",id);}
                     finally{
                         synchronized(handle){handle.active=false;Thread.interrupted();}
@@ -67,6 +75,7 @@ public class OfficeQueueDispatcher implements OfficeWorkerControl {
         for(String id:repository.expired(settings.getMaxQueueWaitSeconds(),settings.getCancelGraceSeconds())) {
             transactions.expire(id); interrupt(id);
         }
+        transactions.recoverExpired(settings.getLeaseTimeoutSeconds());
     }
     @Override public void interrupt(String runId) {
         WorkerHandle worker=workers.get(runId);

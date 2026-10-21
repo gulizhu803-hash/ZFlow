@@ -24,7 +24,10 @@ public interface IOfficeRepository {
     void insertRun(OfficeRun run);
     int updateRun(OfficeRun run);
     List<String> queued(int limit);
-    List<String> unfinished();
+    /** 心跳已超时、需要回收的 RUNNING 任务。 */
+    List<String> expiredLeases(int leaseSeconds);
+    /** 为当前实例持有的任务续心跳。 */
+    int heartbeat(String instanceId);
     List<String> expired(int queueWait, int cancelGrace);
     void insertEvent(OfficeEvent event);
     List<OfficeEvent> events(long ownerId, String runId, long afterSeq, long waterMark);

@@ -22,6 +22,8 @@
         <result column="started_at" property="startedAt"/>
         <result column="deadline_at" property="deadlineAt"/>
         <result column="cancel_requested_at" property="cancelRequestedAt"/>
+        <result column="owner_instance" property="ownerInstance"/>
+        <result column="heartbeat_at" property="heartbeatAt"/>
         <result column="finished_at" property="finishedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -126,8 +128,8 @@
         SELECT COUNT(*) FROM ai_office_run WHERE owner_id=#{ownerId} AND status IN ('QUEUED','RUNNING','CANCEL_REQUESTED')
     </select>
     <insert id="insertRun">
-        INSERT INTO ai_office_run (run_id,owner_id,session_id,idempotency_key,request_hash,request_snapshot,retry_of_run_id,status,stage,last_event_seq,trace_id,model_snapshot,model_attempt_count,generation_receipt,error_code,error_message,started_at,deadline_at,cancel_requested_at,finished_at,created_at,updated_at)
-        VALUES (#{runId},#{ownerId},#{sessionId},#{idempotencyKey},#{requestHash},#{requestSnapshot},#{retryOfRunId},#{status},#{stage},#{lastEventSeq},#{traceId},#{modelSnapshot},#{modelAttemptCount},#{generationReceipt},#{errorCode},#{errorMessage},#{startedAt},#{deadlineAt},#{cancelRequestedAt},#{finishedAt},#{createdAt},#{updatedAt})
+        INSERT INTO ai_office_run (run_id,owner_id,session_id,idempotency_key,request_hash,request_snapshot,retry_of_run_id,status,stage,last_event_seq,trace_id,model_snapshot,model_attempt_count,generation_receipt,error_code,error_message,started_at,deadline_at,cancel_requested_at,owner_instance,heartbeat_at,finished_at,created_at,updated_at)
+        VALUES (#{runId},#{ownerId},#{sessionId},#{idempotencyKey},#{requestHash},#{requestSnapshot},#{retryOfRunId},#{status},#{stage},#{lastEventSeq},#{traceId},#{modelSnapshot},#{modelAttemptCount},#{generationReceipt},#{errorCode},#{errorMessage},#{startedAt},#{deadlineAt},#{cancelRequestedAt},#{ownerInstance},#{heartbeatAt},#{finishedAt},#{createdAt},#{updatedAt})
     </insert>
     <insert id="insertArtifact">
         INSERT INTO ai_artifact (artifact_id,owner_id,session_id,artifact_type,title,current_version,created_at,updated_at)
@@ -142,14 +144,20 @@
         VALUES (#{runId},#{seq},#{eventType},#{schemaVersion},#{payload},#{createdAt})
     </insert>
     <update id="updateRun">
-        UPDATE ai_office_run SET status=#{status},stage=#{stage},last_event_seq=#{lastEventSeq},model_attempt_count=#{modelAttemptCount},generation_receipt=#{generationReceipt},error_code=#{errorCode},error_message=#{errorMessage},started_at=#{startedAt},deadline_at=#{deadlineAt},cancel_requested_at=#{cancelRequestedAt},finished_at=#{finishedAt}, updated_at=UTC_TIMESTAMP(3) WHERE run_id=#{runId}
+        UPDATE ai_office_run SET status=#{status},stage=#{stage},last_event_seq=#{lastEventSeq},model_attempt_count=#{modelAttemptCount},generation_receipt=#{generationReceipt},error_code=#{errorCode},error_message=#{errorMessage},started_at=#{startedAt},deadline_at=#{deadlineAt},cancel_requested_at=#{cancelRequestedAt},owner_instance=#{ownerInstance},heartbeat_at=#{heartbeatAt},finished_at=#{finishedAt}, updated_at=UTC_TIMESTAMP(3) WHERE run_id=#{runId}
     </update>
     <select id="queued" resultType="string">
         SELECT run_id FROM ai_office_run WHERE status='QUEUED' ORDER BY created_at,id LIMIT #{limit}
     </select>
-    <select id="unfinished" resultType="string">
-        SELECT run_id FROM ai_office_run WHERE status IN ('RUNNING','CANCEL_REQUESTED')
+    <select id="expiredLeases" resultType="string">
+        SELECT run_id FROM ai_office_run
+        WHERE status='RUNNING'
+          AND (heartbeat_at IS NULL OR heartbeat_at &lt;= TIMESTAMPADD(SECOND,-#{leaseSeconds},UTC_TIMESTAMP(3)))
     </select>
+    <update id="heartbeat">
+        UPDATE ai_office_run SET heartbeat_at=UTC_TIMESTAMP(3)
+        WHERE owner_instance=#{instanceId} AND status IN ('RUNNING','CANCEL_REQUESTED')
+    </update>
     <select id="expired" resultType="string">
         SELECT run_id FROM ai_office_run WHERE
         (status='QUEUED' AND created_at &lt;= TIMESTAMPADD(SECOND,-#{queueWait},UTC_TIMESTAMP(3))) OR

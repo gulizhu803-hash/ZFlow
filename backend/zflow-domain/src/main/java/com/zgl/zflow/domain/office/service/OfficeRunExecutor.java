@@ -26,8 +26,12 @@ public class OfficeRunExecutor {
     private final IArtifactStorage storage;
     private final OfficeSettings settings;
 
+    /** 兼容无实例标识的调用（测试与单机脚本）。 */
     public void execute(String runId) {
-        OfficeRun claimed=transactions.claim(runId);
+        execute(runId, null);
+    }
+    public void execute(String runId, String instanceId) {
+        OfficeRun claimed=transactions.claim(runId, instanceId);
         if(claimed==null)return;
         try {
             // MySQL JSON normalizes key order and whitespace; compare values, not serialized bytes.

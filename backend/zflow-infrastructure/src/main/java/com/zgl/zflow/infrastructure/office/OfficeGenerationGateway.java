@@ -22,12 +22,15 @@ public class OfficeGenerationGateway implements IOfficeGenerationGateway {
     private final Supplier<ModelConfig> config;
     private final HttpClient http;
     private final String prompt;
+    private final String specPrompt;
     private final String fixture;
+    private final DiagramSpecRenderer renderer=new DiagramSpecRenderer();
     public OfficeGenerationGateway(OfficeSettings settings,Supplier<ModelConfig> config) throws IOException {
         this.settings=settings;this.config=config;
         http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(settings.getModelConnectTimeoutSeconds()))
                 .followRedirects(HttpClient.Redirect.NEVER).build();
         prompt=new ClassPathResource("office/diagram-system-v1.txt").getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        specPrompt=new ClassPathResource("office/diagram-spec-v1.txt").getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         fixture=new ClassPathResource("office/order-architecture.drawio").getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
     }
     @Override public String snapshot() {
@@ -36,8 +39,8 @@ public class OfficeGenerationGateway implements IOfficeGenerationGateway {
                 "configRevision",hash(sample?fixture:json(map("baseUrl",c.baseUrl(),"model",c.model(),"temperature",0.2,
                         "maxOutputTokens",settings.getMaxModelOutputTokens()))),
                 "model",sample?null:c.model(),"temperature",sample?null:0.2,"maxOutputTokens",sample?null:settings.getMaxModelOutputTokens(),
-                "promptVersion",sample?null:"diagram-system-v1","promptHash",sample?null:hash(prompt),
-                "generatorVersion",sample?"fixture-v1":"drawio-xml-v1","validatorVersion",IDiagramValidator.VERSION));
+                "promptVersion",sample?null:(specMode()?"diagram-spec-v1":"diagram-system-v1"),"promptHash",sample?null:hash(specMode()?specPrompt:prompt),
+                "generatorVersion",sample?"fixture-v1":(specMode()?"spec-renderer-v1":"drawio-xml-v1"),"validatorVersion",IDiagramValidator.VERSION));
     }
     @Override public void checkAvailable() {
         if("fixture".equals(settings.getGenerationMode()))return;
@@ -66,15 +69,25 @@ public class OfficeGenerationGateway implements IOfficeGenerationGateway {
                     .defaultOptions(OpenAiChatOptions.builder().model(c.model()).temperature(0.2)
                             .maxTokens(settings.getMaxModelOutputTokens()).internalToolExecutionEnabled(false).build())
                     .retryTemplate(RetryTemplate.builder().maxAttempts(1).build()).build();
+            boolean spec=specMode();
             String user="图表类型："+request.diagramType()+"\n标题："+request.title()+"\n需求：\n"+request.prompt();
-            if(previousXml!=null)user+="\n请修复以下图表，只返回完整 XML。校验摘要：\n"+validationSummary+"\n原图表：\n"+previousXml;
-            var response=ChatClient.create(model).prompt().system(prompt).user(user).call().chatResponse();
+            if(previousXml!=null) {
+                // spec 模式下模型看不到 XML，只把校验问题回传，让它修正结构
+                if(spec) user+="\n上一次的结构未通过校验，问题如下，请修正后只返回 JSON：\n"+validationSummary;
+                else user+="\n请修复以下图表，只返回完整 XML。校验摘要：\n"+validationSummary+"\n原图表：\n"+previousXml;
+            }
+            var response=ChatClient.create(model).prompt().system(spec?specPrompt:prompt).user(user).call().chatResponse();
             if(response==null||response.getResult()==null||response.getResult().getOutput()==null)throw new Failure("MODEL_EMPTY_RESPONSE",false,false,0);
             if("length".equalsIgnoreCase(response.getResult().getMetadata().getFinishReason()))throw new Failure("MODEL_OUTPUT_TRUNCATED",false,false,0);
             // Spring AI may supply zero defaults or derive totals. Preserve only provider-supplied fields.
             var raw=com.alibaba.fastjson2.JSON.parseObject(transport.responseBody());
             var usage=raw.getJSONObject("usage");
-            return new Generation(response.getResult().getOutput().getText(),
+            String text=response.getResult().getOutput().getText();
+            if(spec) {
+                try { text=renderer.render(text); }
+                catch(OfficeException invalidSpec) { throw new Failure("MODEL_INVALID_SPEC",false,false,0); }
+            }
+            return new Generation(text,
                     usage==null?null:usage.getLong("prompt_tokens"),usage==null?null:usage.getLong("completion_tokens"),
                     usage==null?null:usage.getLong("total_tokens"),safeRequestId(raw.getString("id")));
         } catch(Failure e){throw e;}
@@ -86,6 +99,7 @@ public class OfficeGenerationGateway implements IOfficeGenerationGateway {
             throw new Failure("MODEL_TRANSPORT_ERROR",true,true,0);
         }
     }
+    private boolean specMode(){return "spec".equalsIgnoreCase(settings.getOutputMode());}
     private String safeRequestId(String value){return value==null?null:value.substring(0,Math.min(128,value.length()));}
     private long retryAfter(ClientHttpResponse response) {
         String value=response.getHeaders().getFirst("Retry-After");

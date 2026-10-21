@@ -10,6 +10,8 @@ zflow:
     generation-mode: ${ZFLOW_OFFICE_GENERATION_MODE:model}
     model-bean: SystemModel
     storage-root: ${ZFLOW_OFFICE_STORAGE_ROOT:}
+    # xml = 模型直接输出 draw.io XML；spec = 只输出结构 JSON，由服务端渲染
+    output-mode: ${ZFLOW_OFFICE_OUTPUT_MODE:xml}
 
 # 指标暴露：health 供 Docker healthcheck，prometheus 供抓取。
 # 生产环境应仅在容器网络内可达；该端口同时承载业务接口，切勿直接映射到公网。

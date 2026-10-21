@@ -79,6 +79,7 @@ class OfficeMySqlTest {
                     .replaceAll("(?s)CREATE DATABASE IF NOT EXISTS `ai-agent`.*?;","").replace("USE `ai-agent`;","");
             ScriptUtils.executeSqlScript(c,new ByteArrayResource(baseline.getBytes(StandardCharsets.UTF_8)));
             ScriptUtils.executeSqlScript(c,new FileSystemResource("../docs/mysql/03-office-artifacts.sql"));
+            ScriptUtils.executeSqlScript(c,new FileSystemResource("../docs/mysql/04-office-lease.sql"));
         }
         repository=context.getBean(IOfficeRepository.class);tx=context.getBean(OfficeTransactions.class);
         runs=context.getBean(OfficeRunService.class);runner=context.getBean(OfficeRunExecutor.class);
@@ -360,11 +361,13 @@ class OfficeMySqlTest {
     @Test void actualDrawioEditorExportCanBeSavedAsNewImmutableRevision()throws Exception {
         String edited=new ClassPathResource("office/editor-roundtrip.drawio").getContentAsString(StandardCharsets.UTF_8);
         assertTrue(edited.contains("编辑验证"));
+        // 保存前会统一换行；断言必须用归一化后的内容，否则 Windows 检出会因 CRLF 失败
+        String normalized=edited.replace("\r\n","\n").replace("\r","\n");
         OfficeRevision v1=revision(success());
         var saved=artifacts.save(1,v1.getArtifactId(),1,edited,"editor-roundtrip");
         assertEquals(2,saved.revision().getVersion());
-        assertEquals(hash(edited),saved.revision().getContentHash());
-        assertEquals(edited,new String(artifacts.content(1,v1.getArtifactId(),2).bytes(),StandardCharsets.UTF_8));
+        assertEquals(hash(normalized),saved.revision().getContentHash());
+        assertEquals(normalized,new String(artifacts.content(1,v1.getArtifactId(),2).bytes(),StandardCharsets.UTF_8));
         assertEquals(v1.getContentHash(),hash(artifacts.content(1,v1.getArtifactId(),1).bytes()));
     }
 

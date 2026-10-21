@@ -24,6 +24,10 @@ public class OfficeRun {
     private LocalDateTime startedAt;
     private LocalDateTime deadlineAt;
     private LocalDateTime cancelRequestedAt;
+    /** 当前执行该任务的实例标识；只有持有租约的实例才会续心跳。 */
+    private String ownerInstance;
+    /** 最近一次心跳时间；超过租约时长即视为实例已失联。 */
+    private LocalDateTime heartbeatAt;
     private LocalDateTime finishedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

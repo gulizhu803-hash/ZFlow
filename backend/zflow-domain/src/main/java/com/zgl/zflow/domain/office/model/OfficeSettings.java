@@ -8,11 +8,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OfficeSettings {
     private boolean enabled;
     /**
-     * 启动时是否把 RUNNING 状态的任务判定为“进程重启、已中断”。
-     * 单实例应保持 true；多实例/滚动发布必须设为 false，
-     * 否则新实例一启动就会把其他实例正在执行的任务全部判死。
+     * 模型输出契约：xml = 直接输出 draw.io XML；spec = 只输出结构 JSON，由服务端渲染。
+     * spec 模式的输出 token 约为 xml 的十分之一。
      */
-    private boolean recoverOnStart = true;
+    private String outputMode = "xml";
+    /**
+     * 任务租约：实例每 heartbeatIntervalMs 续一次心跳，
+     * 超过 leaseTimeoutSeconds 没有心跳的任务才允许被回收。
+     */
+    private int leaseTimeoutSeconds = 90;
+    private long heartbeatIntervalMs = 15000;
     private String generationMode = "model";
     private String modelBean = "SystemModel";
     private String storageRoot;

@@ -79,6 +79,9 @@ public class OfficeTransactions {
         return new OfficeException(409, "IDEMPOTENCY_KEY_REUSED", "幂等键已用于不同的请求");
     }
     public OfficeRun claim(String runId) {
+        return claim(runId, null);
+    }
+    public OfficeRun claim(String runId, String instanceId) {
         OfficeRun r = repository.lockRun(runId);
         if (r == null || !"QUEUED".equals(r.getStatus())) return null;
         LocalDateTime now = repository.now();
@@ -86,8 +89,32 @@ public class OfficeTransactions {
             terminal(r, "FAILED", "QUEUE_TIMEOUT", "排队等待超时"); return null;
         }
         r.setStatus("RUNNING"); r.setStartedAt(now); r.setDeadlineAt(now.plusSeconds(settings.getRunTimeoutSeconds()));
+        r.setOwnerInstance(instanceId); r.setHeartbeatAt(now);
         event(r,"run.started",map("status","RUNNING")); repository.updateRun(r);
         return r;
+    }
+    /** 实例级心跳：只续自己名下仍在运行的任务。 */
+    public void heartbeat(String instanceId) {
+        if (instanceId == null) return;
+        repository.heartbeat(instanceId);
+    }
+    /**
+     * 回收租约过期的任务。锁内再判断一次心跳，避免“刚续上就被别人回收”的竞态。
+     */
+    public int recoverExpired(int leaseSeconds) {
+        int reclaimed = 0;
+        for (String runId : repository.expiredLeases(leaseSeconds)) {
+            if (reclaimExpired(runId, leaseSeconds)) reclaimed++;
+        }
+        return reclaimed;
+    }
+    private boolean reclaimExpired(String runId, int leaseSeconds) {
+        OfficeRun r = repository.lockRun(runId);
+        if (r == null || !"RUNNING".equals(r.getStatus())) return false;
+        LocalDateTime heartbeat = r.getHeartbeatAt();
+        if (heartbeat != null && heartbeat.isAfter(repository.now().minusSeconds(leaseSeconds))) return false;
+        terminal(r, "FAILED", "LEASE_EXPIRED", "实例失联超过 " + leaseSeconds + " 秒，任务已被回收");
+        return true;
     }
     public OfficeRun checkpoint(String runId, String stage) {
         OfficeRun r = repository.lockRun(runId);
