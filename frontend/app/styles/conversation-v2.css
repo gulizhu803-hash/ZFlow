@@ -1,0 +1,123 @@
+/* ZFlow Focus layout — chat only, scoped to .conversation-page--focus.
+   Loaded after shell.css; never touches the legacy Work layout. */
+
+/* Structural wrappers (neutral for Work; Focus overrides below). */
+.conversation-body { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.conversation-thread { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+
+.conversation-page--focus { background: var(--z-canvas); }
+.conversation-page--focus .conversation-sidebar { display: none; }
+.conversation-page--focus .mobile-conversation-tools { display: none; }
+
+/* ---------- 56px session header ---------- */
+.conversation-page--focus .conversation-header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 var(--z-space-6);
+  gap: var(--z-space-3);
+  border-bottom: 1px solid var(--z-line);
+  background: var(--z-paper);
+}
+.conversation-page--focus .conversation-title-button {
+  display: flex;
+  align-items: center;
+  gap: var(--z-space-2);
+  min-height: 32px;
+  max-width: 320px;
+  padding: 0 var(--z-space-2);
+  border-radius: var(--z-r-control);
+  color: var(--z-ink);
+  font: 500 13px/1 var(--z-sans);
+}
+.conversation-page--focus .conversation-title-button:hover { background: var(--z-fill); }
+.conversation-page--focus .conversation-title-button svg { flex-shrink: 0; }
+.conversation-page--focus .conversation-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.conversation-page--focus .conversation-header__spacer { flex: 1; }
+.conversation-page--focus .status-pill {
+  flex: none;
+  background: var(--z-fill);
+  color: var(--z-ink-2);
+  font: 500 10px/1 var(--z-sans);
+  padding: 5px 9px;
+  border-radius: var(--z-r-chip);
+}
+.conversation-page--focus .status-pill.running,
+.conversation-page--focus .status-pill.complete { background: var(--z-blue-soft); color: var(--z-blue); }
+.conversation-page--focus .status-pill.failed { background: rgba(215, 0, 21, .10); color: var(--z-red); }
+.conversation-page--focus .status-pill.unknown { background: rgba(178, 80, 0, .12); color: var(--z-orange); }
+.conversation-page--focus .tag.sage { flex: none; }
+.conversation-page--focus .context-button {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 var(--z-space-3);
+  border-radius: var(--z-r-control);
+  color: var(--z-ink-2);
+  font: 500 12px/1 var(--z-sans);
+}
+.conversation-page--focus .context-button:hover { background: var(--z-fill); color: var(--z-ink); }
+
+/* ---------- body: thread + context rail ---------- */
+.conversation-page--focus .conversation-main { background: var(--z-canvas); }
+.conversation-page--focus .conversation-body { flex: 1; min-height: 0; display: flex; flex-direction: row; }
+.conversation-page--focus .conversation-thread {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--z-thread);
+  margin: 0 auto;
+}
+.conversation-page--focus .context-rail {
+  width: var(--z-context);
+  flex-shrink: 0;
+  border-left: 1px solid var(--z-line);
+  background: var(--z-paper-2);
+  overflow-y: auto;
+}
+
+/* ---------- thread internals ---------- */
+.conversation-page--focus .conversation-scroll { flex: 1; min-height: 0; padding: var(--z-space-6) var(--z-space-6) 0; }
+.conversation-page--focus .conversation-compose {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--z-space-4) var(--z-space-6) var(--z-space-6);
+  background: transparent;
+}
+.conversation-page--focus .message-list { max-width: 100%; }
+.conversation-page--focus .conversation-welcome { max-width: 100%; }
+.conversation-page--focus .conversation-error { max-width: 100%; }
+.conversation-page--focus .send-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--z-r-capsule);
+  background: var(--z-blue-fill);
+  color: var(--z-on-blue);
+}
+.conversation-page--focus .send-button:hover { background: var(--z-blue-hover); }
+.conversation-page--focus .chat-composer { border-radius: 18px; border-color: var(--z-line-strong); }
+
+/* ---------- 1024–1279: no resident Context; Context via header button ---------- */
+@media (max-width: 1279px) {
+  .conversation-page--focus .context-rail { display: none; }
+  .conversation-page--focus .context-button { display: inline-flex; }
+}
+
+/* ---------- <768: no rail; 44px header; full-width thread ---------- */
+@media (max-width: 767px) {
+  .conversation-page--focus .conversation-header {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 var(--z-space-4);
+  }
+  .conversation-page--focus .conversation-thread { max-width: 100%; }
+  .conversation-page--focus .conversation-scroll { padding: var(--z-space-4) var(--z-space-4) 0; }
+  .conversation-page--focus .conversation-compose { padding: var(--z-space-3) var(--z-space-4) var(--z-space-4); }
+}
