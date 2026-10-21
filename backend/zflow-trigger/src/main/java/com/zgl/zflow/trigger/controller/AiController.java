@@ -17,6 +17,7 @@ import com.zgl.zflow.domain.user.model.vo.QueryWorkAgentVO;
 import com.zgl.zflow.domain.ai.model.dto.AiArmoryDTO;
 import com.zgl.zflow.domain.ai.model.dto.AiWorkDTO;
 import com.zgl.zflow.domain.ai.model.dto.AiUploadDTO;
+import com.zgl.zflow.trigger.service.AiSseHeartbeat;
 import com.zgl.zflow.types.result.Result;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -73,13 +75,27 @@ public class AiController implements IAiApi {
     @Resource
     private MatchChecker matchChecker;
 
+    @Resource
+    private AiSseHeartbeat sseHeartbeat;
+
+    @Value("${zflow.ai.sse-timeout-ms:600000}")
+    private long sseTimeoutMs;
+
     @Override
     @PostMapping(value = "/work/execute", produces = "text/event-stream")
     public SseEmitter execute(@Valid @RequestBody AiWorkDTO aiWorkDTO) {
 
         String sessionId = aiWorkDTO.getSessionId();
         String userMessage = aiWorkDTO.getUserMessage();
-        SseEmitter sseEmitter = new SseEmitter(0L);
+        SseEmitter sseEmitter = new SseEmitter(sseTimeoutMs);
+        sseHeartbeat.register(sseEmitter);
+        sseEmitter.onCompletion(() -> sseHeartbeat.unregister(sseEmitter));
+        sseEmitter.onTimeout(() -> {
+            sseHeartbeat.unregister(sseEmitter);
+            log.warn("【AI 执行】SSE 超时，连接已释放：sessionId={}", sessionId);
+            sseEmitter.complete();
+        });
+        sseEmitter.onError(e -> sseHeartbeat.unregister(sseEmitter));
         String agentId = aiWorkDTO.getAgentId();
         String agentDesc = aiWorkDTO.getAgentDesc();
 

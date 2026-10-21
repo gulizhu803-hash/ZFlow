@@ -12,6 +12,10 @@ zflow:
     storage-root: ${ZFLOW_OFFICE_STORAGE_ROOT:}
     # xml = 模型直接输出 draw.io XML；spec = 只输出结构 JSON，由服务端渲染
     output-mode: ${ZFLOW_OFFICE_OUTPUT_MODE:xml}
+  ai:
+    # 工作流 SSE 的超时与心跳（毫秒）：超时后连接释放，心跳避免代理按空闲切断
+    sse-timeout-ms: ${ZFLOW_AI_SSE_TIMEOUT_MS:600000}
+    sse-heartbeat-ms: ${ZFLOW_AI_SSE_HEARTBEAT_MS:15000}
 
 # 指标暴露：health 供 Docker healthcheck，prometheus 供抓取。
 # 生产环境应仅在容器网络内可达；该端口同时承载业务接口，切勿直接映射到公网。
