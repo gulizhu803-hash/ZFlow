@@ -1,6 +1,9 @@
 <script setup>
 import Icon from './Icon.vue';
-defineProps({ current: { type: String, default: '' } });
+defineProps({
+  current: { type: String, default: '' },
+  moreOpen: { type: Boolean, default: false }
+});
 const emit = defineEmits(['navigate', 'more']);
 const items = [
   { id: 'home', name: '首页', icon: 'home' },
@@ -22,7 +25,7 @@ const items = [
       <Icon :name="item.icon" :size="22" />
       <span>{{ item.name }}</span>
     </button>
-    <button class="tab-bar__item" aria-label="更多" aria-haspopup="dialog" @click="emit('more')">
+    <button class="tab-bar__item" :class="{ active: moreOpen }" aria-label="更多" aria-haspopup="dialog" :aria-expanded="moreOpen ? 'true' : 'false'" @click="emit('more')">
       <Icon name="more" :size="22" />
       <span>更多</span>
     </button>

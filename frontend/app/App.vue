@@ -76,7 +76,7 @@ onBeforeUnmount(() => { window.removeEventListener('hashchange', readRoute); win
       <div v-if="state.loading" class="loading-bar" aria-label="正在加载工作空间"></div>
       <main id="main-content"><component :is="views[state.route.page]" v-if="views[state.route.page]" :key="state.route.page + (state.auth ? ownerId(state.auth) : 'demo')" /><div v-else class="empty-state"><Icon name="compass" :size="40" /><h1>还没走到的地方</h1><p>这个页面不存在，回到工作台继续吧。</p><button class="primary-button" @click="go('home')">返回工作台</button></div></main>
     </div>
-    <TabBar :current="state.route.page" @navigate="onTabNavigate" @more="onTabMore" />
+    <TabBar :current="state.route.page" :more-open="moreOpen" @navigate="onTabNavigate" @more="onTabMore" />
     <Sheet v-if="moreOpen" title="更多" @close="moreOpen = false">
       <div class="sheet-menu">
         <button v-for="item in moreItems" :key="item.id" @click="onMoreSelect(item)"><Icon :name="item.icon" :size="18" /><span>{{ item.name }}</span><Icon name="arrow" :size="16" /></button>
