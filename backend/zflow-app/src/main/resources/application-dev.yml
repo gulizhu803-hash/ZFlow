@@ -111,7 +111,8 @@ miniagent:
   jwt:
     secret: ${JWT_SECRET}
     issuer: ${JWT_ISSUER}
-    expire-seconds: 72000000000
+    # 短期访问令牌（2 小时），过期后用 /user/auth/refresh 换新；不要再设成“永不过期”
+    expire-seconds: 7200
 
   # OSS
   oss:

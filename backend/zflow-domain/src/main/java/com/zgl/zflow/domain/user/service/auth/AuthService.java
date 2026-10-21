@@ -3,6 +3,7 @@ package com.zgl.zflow.domain.user.service.auth;
 import com.zgl.zflow.domain.user.model.vo.UserVO;
 import com.zgl.zflow.domain.user.repository.IUserRepository;
 import com.zgl.zflow.domain.util.jwt.IJwtUtil;
+import com.zgl.zflow.domain.util.jwt.UserContext;
 import com.zgl.zflow.domain.util.oss.IOssUtil;
 import com.zgl.zflow.domain.user.model.dto.AuthDTO;
 import com.zgl.zflow.domain.user.model.vo.AuthVO;
@@ -27,6 +28,27 @@ public class AuthService implements IAuthService {
 
     @Resource
     private PasswordEncoder passwordEncoder;
+
+    @Resource
+    private UserContext userContext;
+
+    /**
+     * 用当前有效 token 换一枚新的短期 token。
+     * 旧 token 到期前仍然可用（无状态 JWT 的固有代价），
+     * 真正吊销需要 jti 黑名单或轮换 JWT_SECRET。
+     */
+    @Override
+    public AuthVO refresh() {
+        Long userId = userContext.getUserId();
+        if (userId == null) {
+            throw new AuthException(AUTH_USER_NOT_EXISTS);
+        }
+        UserVO userVO = userRepository.queryUserByUserName(userContext.getUserName());
+        if (userVO == null || Integer.valueOf(0).equals(userVO.getUserStatus())) {
+            throw new AuthException(AUTH_USER_UNAVAILABLE);
+        }
+        return buildAuthResponse(userVO);
+    }
 
     @Override
     public AuthVO login(AuthDTO dto) {

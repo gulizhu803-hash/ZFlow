@@ -4,14 +4,19 @@ import com.zgl.zflow.api.IUserApi;
 import com.zgl.zflow.domain.user.model.dto.*;
 import com.zgl.zflow.domain.user.model.vo.*;
 import com.zgl.zflow.domain.user.service.auth.IAuthService;
+import com.zgl.zflow.domain.user.service.auth.LoginThrottle;
 import com.zgl.zflow.domain.user.service.query.IQueryService;
 import com.zgl.zflow.domain.user.service.setting.ISettingService;
+import com.zgl.zflow.types.exception.AuthException;
 import com.zgl.zflow.types.result.Result;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -30,6 +35,9 @@ public class UserController implements IUserApi {
 
     @Resource
     private IQueryService queryService;
+
+    @Resource
+    private LoginThrottle loginThrottle;
 
     @PostMapping("/query/work-agent")
     @Override
@@ -69,7 +77,38 @@ public class UserController implements IUserApi {
     @PostMapping("/auth/login")
     @Override
     public Result<AuthVO> login(@Valid @RequestBody AuthDTO dto) {
-        return Result.success(authService.login(dto));
+        String ip = clientIp();
+        loginThrottle.check(ip, dto.getUserName());
+        try {
+            AuthVO auth = authService.login(dto);
+            loginThrottle.onSuccess(ip, dto.getUserName());
+            return Result.success(auth);
+        } catch (AuthException e) {
+            loginThrottle.onFailure(ip, dto.getUserName());
+            throw e;
+        }
+    }
+
+    @PostMapping("/auth/refresh")
+    @Override
+    public Result<AuthVO> refresh() {
+        return Result.success(authService.refresh());
+    }
+
+    /**
+     * 取真实来源 IP：网关会透传 X-Forwarded-For，直连时回落到 remoteAddr。
+     */
+    private String clientIp() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return "unknown";
+        }
+        HttpServletRequest request = attributes.getRequest();
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/auth/register")

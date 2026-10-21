@@ -28,6 +28,8 @@ public interface IUserApi {
 
     Result<AuthVO> register(AuthDTO dto);
 
+    Result<AuthVO> refresh();
+
     Result<AuthVO> profileQuery();
 
     Result<AuthVO> profileEdit(ProfileEditDTO dto, MultipartFile avatar);

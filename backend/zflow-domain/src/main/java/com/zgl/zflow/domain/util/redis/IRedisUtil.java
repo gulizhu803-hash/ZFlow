@@ -10,6 +10,11 @@ public interface IRedisUtil {
     void setValue(String key, Object value, long ttlSeconds);
     <T> T getValue(String key, Class<T> type);
 
+    /**
+     * 原子自增，返回自增后的值；key 首次创建时设置过期时间（秒）。
+     */
+    long increment(String key, long ttlSeconds);
+
     void setList(String key, List<?> values);
     void setList(String key, List<?> values, long ttlSeconds);
     <T> List<T> getList(String key, Class<T> elementType);

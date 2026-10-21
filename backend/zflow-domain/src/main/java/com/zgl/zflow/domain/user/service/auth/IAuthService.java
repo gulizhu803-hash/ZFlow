@@ -9,4 +9,6 @@ public interface IAuthService {
 
     AuthVO register(AuthDTO dto);
 
+    AuthVO refresh();
+
 }

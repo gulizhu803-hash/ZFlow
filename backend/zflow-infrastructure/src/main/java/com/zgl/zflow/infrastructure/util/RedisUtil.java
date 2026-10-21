@@ -61,6 +61,16 @@ public class RedisUtil implements IRedisUtil {
     }
 
     @Override
+    public long increment(String key, long ttlSeconds) {
+        if (key == null || key.isBlank()) return 0;
+        Long value = redisTemplate.opsForValue().increment(key);
+        if (value != null && value == 1L && ttlSeconds > 0) {
+            redisTemplate.expire(key, java.time.Duration.ofSeconds(ttlSeconds));
+        }
+        return value == null ? 0 : value;
+    }
+
+    @Override
     public <T> T getValue(String key, Class<T> type) {
         if (key == null || key.isBlank() || type == null) return null;
         String json = redisTemplate.opsForValue().get(key);

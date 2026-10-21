@@ -3,6 +3,8 @@ package com.zgl.zflow.trigger.handler;
 import com.zgl.zflow.types.exception.*;
 import com.zgl.zflow.types.result.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -37,6 +39,14 @@ public class GlobalExceptionHandler {
     public Result<Void> handleConflict(AuthException e) {
         log.error("鉴权错误: {}", e.getMessage());
         return Result.error(e.getMessage());
+    }
+
+    @ExceptionHandler(RateLimitedException.class)
+    public ResponseEntity<Result<Void>> handleRateLimited(RateLimitedException e) {
+        log.warn("触发限流: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(e.getRetryAfterSeconds()))
+                .body(Result.error(e.getMessage()));
     }
 
     @ExceptionHandler(SessionException.class)
