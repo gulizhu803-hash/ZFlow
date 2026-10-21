@@ -65,6 +65,13 @@ const todayItems = computed(() => {
   return items;
 });
 
+const todayRun = computed(() => todayItems.value.find(item => item.key === 'run' || item.key === 'demo-run'));
+const todaySchedule = computed(() => todayItems.value.find(item => item.kind === 'schedule'));
+const sheetRecent = computed(() => {
+  const runId = todayRun.value?.session?.id;
+  return recent.value.filter(session => session.id !== runId);
+});
+
 const bands = [
   { no: '01', label: '分步执行', note: '先规划，再行动' },
   { no: '02', label: '循环优化', note: '执行、评估、改进' },
@@ -143,25 +150,36 @@ function applySuggestion(text) { prompt.value = text; nextTick(() => composer.va
     <Sheet v-if="todayOpen" title="今天" @close="todayOpen = false">
       <div class="home-today-sheet">
         <section class="home-today-sheet__section">
-          <h3>运行中</h3>
+          <h3 v-if="activeRun">运行中</h3>
+          <h3 v-else-if="todayRun && todayRun.kind === 'recent' && !todayRun.empty">最近运行</h3>
+          <h3 v-else>运行中</h3>
           <p v-if="activeRun" class="home-today-sheet__note">{{ runStatusText }} · {{ activeRun.prompt || '正在执行任务' }}</p>
+          <template v-else-if="todayRun && todayRun.kind === 'recent' && !todayRun.empty">
+            <p class="home-today-sheet__note">{{ todayRun.title }}</p>
+            <p class="home-today-sheet__meta">{{ todayRun.meta }}</p>
+          </template>
           <p v-else class="home-today-sheet__note is-empty">没有正在运行的任务。</p>
           <button v-if="activeRun" class="home-link" type="button" @click="todayOpen = false; openTodayItem({ kind: 'run' })">回到任务</button>
+          <button v-else-if="todayRun && todayRun.kind === 'recent' && !todayRun.empty" class="home-link" type="button" @click="todayOpen = false; openTodayItem(todayRun)">查看会话</button>
         </section>
         <section class="home-today-sheet__section">
           <h3>定时安排</h3>
-          <p class="home-today-sheet__note is-empty">今天没有定时安排。</p>
-          <button class="home-link" type="button" @click="todayOpen = false; nav('schedules')">去定时任务</button>
+          <template v-if="todaySchedule && !todaySchedule.empty">
+            <p class="home-today-sheet__note">{{ todaySchedule.title }}</p>
+            <p class="home-today-sheet__meta">{{ todaySchedule.meta }}</p>
+          </template>
+          <p v-else class="home-today-sheet__note is-empty">今天没有定时安排。</p>
+          <button class="home-link" type="button" @click="todayOpen = false; openTodayItem(todaySchedule || { kind: 'schedule' })">去定时任务</button>
         </section>
         <section class="home-today-sheet__section">
-          <h3>最近会话 <span class="home-today-sheet__count">{{ recent.length }}</span></h3>
+          <h3>最近会话 <span class="home-today-sheet__count">{{ sheetRecent.length }}</span></h3>
           <div class="home-today-sheet__list">
-            <button v-for="session in recent" :key="session.id" class="home-today-sheet__row" type="button" @click="todayOpen = false; nav(session.type, { session: session.id })">
+            <button v-for="session in sheetRecent" :key="session.id" class="home-today-sheet__row" type="button" @click="todayOpen = false; openTodayItem({ kind: 'recent', session })">
               <Icon :name="sessionIcon(session.type)" :size="17" />
               <span class="home-today-sheet__title">{{ session.title }}</span>
               <span class="home-today-sheet__meta">{{ typeLabel(session.type) }} · {{ shortTime(session.createdAt) }}</span>
             </button>
-            <p v-if="!recent.length" class="home-today-sheet__note is-empty">还没有会话。</p>
+            <p v-if="!sheetRecent.length" class="home-today-sheet__note is-empty">还没有会话。</p>
           </div>
         </section>
       </div>
