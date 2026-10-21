@@ -7,6 +7,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "zflow.office")
 public class OfficeSettings {
     private boolean enabled;
+    /**
+     * 启动时是否把 RUNNING 状态的任务判定为“进程重启、已中断”。
+     * 单实例应保持 true；多实例/滚动发布必须设为 false，
+     * 否则新实例一启动就会把其他实例正在执行的任务全部判死。
+     */
+    private boolean recoverOnStart = true;
     private String generationMode = "model";
     private String modelBean = "SystemModel";
     private String storageRoot;

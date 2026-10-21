@@ -36,8 +36,9 @@ public class OfficeQueueDispatcher implements OfficeWorkerControl {
     }
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
-        for(String id:repository.unfinished())transactions.recover(id);
-        log.info("office startup orphanFiles={}",storage.countOrphans(new HashSet<>(repository.objectKeys())));
+        if(settings.isRecoverOnStart())
+            for(String id:repository.unfinished())transactions.recover(id);
+        log.info("office startup orphanFiles={} recoverOnStart={}",storage.countOrphans(new HashSet<>(repository.objectKeys())),settings.isRecoverOnStart());
         ready=true;
     }
     @Scheduled(fixedDelayString="${zflow.office.dispatch-interval-ms:1000}")
