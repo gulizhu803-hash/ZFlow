@@ -1,0 +1,304 @@
+/* ZFlow four-mode app shell — P1 stage 2.
+   Loaded after styles.css + tokens.css. Scoped overrides only:
+   reuses --z-* tokens, never re-imports the legacy palette, never
+   rewrites page-internal business classes. */
+
+/* ---------- shared shell scale ---------- */
+.app-shell {
+  --shell-pad: var(--z-space-9);        /* 48px — >=1280 default */
+  --shell-safe: env(safe-area-inset-bottom, 0px);
+  overflow-x: clip;
+}
+@media (min-width: 1600px) { .app-shell { --shell-pad: var(--z-space-10); } } /* 64px */
+@media (max-width: 1279px) { .app-shell { --shell-pad: var(--z-space-8); } }  /* 40px */
+@media (max-width: 1023px) { .app-shell { --shell-pad: var(--z-space-7); } }  /* 32px */
+@media (max-width: 767px)  { .app-shell { --shell-pad: var(--z-space-5); } }  /* 20px */
+
+/* ---------- RailNav ---------- */
+.rail-nav {
+  display: none;
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--z-rail);                  /* 72px */
+  flex-direction: column;
+  align-items: center;
+  padding: var(--z-space-3) 0;
+  background: var(--z-paper);
+  border-right: 1px solid var(--z-line);
+  z-index: 50;
+}
+.rail-nav__list {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--z-space-1);
+  overflow-y: auto;
+  padding: 0 var(--z-space-1);
+}
+.rail-nav__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--z-space-3) var(--z-space-1);
+  border-radius: var(--z-r-chip);
+  color: var(--z-ink-3);
+  font-size: 10px;
+  line-height: 1;
+}
+.rail-nav__item svg { width: 20px; height: 20px; }
+.rail-nav__item:hover { background: var(--z-fill); color: var(--z-ink); }
+.rail-nav__item.active { background: var(--z-blue-soft); color: var(--z-blue); }
+.rail-nav__avatar {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--z-fill);
+  color: var(--z-ink-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.rail-nav__footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--z-space-1);
+  padding: var(--z-space-3) var(--z-space-1) 0;
+  border-top: 1px solid var(--z-line);
+}
+
+/* ---------- TabBar ---------- */
+.tab-bar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--z-tabbar) + var(--shell-safe));
+  padding-bottom: var(--shell-safe);
+  background: var(--z-glass);
+  -webkit-backdrop-filter: var(--z-glass-blur);
+  backdrop-filter: var(--z-glass-blur);
+  border-top: 1px solid var(--z-line);
+  z-index: 60;
+}
+.tab-bar__item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--z-ink-3);
+  font-size: 10px;
+}
+.tab-bar__item:hover { color: var(--z-ink); }
+.tab-bar__item.active { color: var(--z-blue); }
+
+/* ---------- Sheet ---------- */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 23, 26, .4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--z-space-6);
+  animation: zf-fade-in var(--z-dur-fast) ease;
+}
+.sheet {
+  background: var(--z-paper);
+  border: 1px solid var(--z-line);
+  border-radius: var(--z-r-surface);
+  box-shadow: var(--z-shadow-3);
+  width: 560px;
+  max-width: 100%;
+  max-height: 90dvh;
+  overflow: auto;
+  outline: none;
+  animation: zf-sheet-in var(--z-dur-base) var(--z-ease-out);
+}
+.sheet--lg { width: 760px; }
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--z-space-4);
+  padding: var(--z-space-5) var(--z-space-6);
+  border-bottom: 1px solid var(--z-line);
+  position: sticky;
+  top: 0;
+  background: var(--z-paper);
+  z-index: 2;
+}
+.sheet__head h2 { font-size: 16px; font-weight: 600; }
+.sheet__body { padding: var(--z-space-6); }
+
+/* menu hosted by a Sheet (mobile More / future create shell) */
+.sheet-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--z-space-1);
+}
+.sheet-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--z-space-3);
+  width: 100%;
+  padding: var(--z-space-3) var(--z-space-4);
+  border-radius: var(--z-r-control);
+  color: var(--z-ink-2);
+  font-size: 13px;
+  text-align: left;
+}
+.sheet-menu button:hover { background: var(--z-fill); color: var(--z-ink); }
+.sheet-menu button > span { flex: 1; }
+.sheet-menu button > svg:last-child { color: var(--z-ink-4); }
+
+@keyframes zf-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zf-sheet-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes zf-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+
+@media (max-width: 767px) {
+  .sheet-backdrop { align-items: flex-end; padding: 0; }
+  .sheet {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--z-r-surface) var(--z-r-surface) 0 0;
+    border-bottom: 0;
+    animation: zf-sheet-up var(--z-dur-base) var(--z-ease-spring);
+  }
+  .sheet__head { padding: var(--z-space-4) var(--z-space-5); }
+  .sheet__body { padding: var(--z-space-5); padding-bottom: calc(var(--z-space-5) + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ---------- mode: focus / run (rail replaces sidebar + topbar) ---------- */
+.mode-focus .sidebar,
+.mode-run .sidebar,
+.mode-create .sidebar,
+.mode-focus .sidebar-scrim,
+.mode-run .sidebar-scrim,
+.mode-create .sidebar-scrim {
+  display: none;
+}
+.mode-focus .topbar,
+.mode-run .topbar,
+.mode-create .topbar {
+  display: none;
+}
+.mode-focus .main-shell,
+.mode-run .main-shell {
+  margin-left: var(--z-rail);
+}
+.mode-create .main-shell {
+  margin-left: 0;
+}
+.mode-focus .conversation-layout,
+.mode-run .conversation-layout {
+  height: 100dvh;
+  min-height: 0;
+}
+
+/* ---------- mode: browse (sidebar) ---------- */
+.mode-browse .sidebar {
+  display: flex;
+  width: var(--z-sidebar);              /* 248px */
+}
+.mode-browse .main-shell {
+  margin-left: var(--z-sidebar);
+}
+.mode-browse .topbar {
+  height: var(--z-topbar);              /* 52px */
+  padding-left: var(--shell-pad);
+  padding-right: var(--shell-pad);
+}
+.mode-browse .mobile-menu { display: none !important; }
+
+/* ---------- mode: create (no chrome; fullscreen sheet capability) ---------- */
+.mode-create .rail-nav,
+.mode-create .tab-bar {
+  display: none;
+}
+
+/* ---------- responsive ---------- */
+
+/* medium (768–1023): browse swaps sidebar for the rail */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mode-browse .sidebar { display: none; }
+  .mode-browse .main-shell { margin-left: var(--z-rail); }
+  .mode-browse .rail-nav { display: flex; }
+}
+
+/* focus/run rail from 768 up */
+@media (min-width: 768px) {
+  .mode-focus .rail-nav,
+  .mode-run .rail-nav { display: flex; }
+}
+
+/* mobile (<768): no sidebar/rail; browse keeps its drawer; TabBar everywhere */
+@media (max-width: 767px) {
+  .mode-browse .main-shell,
+  .mode-focus .main-shell,
+  .mode-run .main-shell,
+  .mode-create .main-shell { margin-left: 0; }
+
+  .mode-browse .sidebar {
+    display: flex;
+    width: 236px;
+    transform: translateX(-100%);
+    transition: transform var(--z-dur-base) var(--z-ease-out);
+    z-index: 40;
+  }
+  .mode-browse .sidebar.is-open { transform: translateX(0); }
+  .mode-browse .sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(23, 23, 26, .35);
+    z-index: 39;
+  }
+  .mode-browse .mobile-menu { display: inline-flex !important; }
+  .mode-browse .topbar { height: 44px; }
+
+  .mode-browse .tab-bar,
+  .mode-focus .tab-bar,
+  .mode-run .tab-bar { display: flex; }
+
+  .mode-focus .conversation-layout,
+  .mode-run .conversation-layout {
+    height: calc(100dvh - var(--z-tabbar) - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---------- content gutter ---------- */
+.app-shell .page {
+  max-width: none;
+  margin: 0 auto;
+  padding: var(--shell-pad);
+}
+@media (min-width: 1280px) {
+  .app-shell .page { max-width: var(--z-content); } /* 1200px */
+}
+@media (max-width: 767px) {
+  .app-shell .page {
+    padding-bottom: calc(var(--shell-pad) + var(--z-tabbar) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* toast: re-center where there is no sidebar, and fix the 700–767px gap */
+@media (max-width: 767px) {
+  .toast-message { left: 50%; }
+}
+.app-shell.mode-focus ~ .toast-message,
+.app-shell.mode-run ~ .toast-message { left: calc(50% + var(--z-rail) / 2); }
+.app-shell.mode-create ~ .toast-message { left: 50%; }
