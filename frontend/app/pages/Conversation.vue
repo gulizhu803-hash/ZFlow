@@ -8,115 +8,210 @@ import { state, isDemo, nav, notify, report } from '../lib/workspace.js';
 import { post, stream } from '../lib/api.js';
 import { parseJSON } from '../lib/protocol.js';
 import { strategies, sectionLabels } from '../lib/demo.js';
+import { createConversationAdapter } from '../../ui-v2-p0/src/conversation-adapter.js';
+import { deriveUi } from '../../ui-v2-p0/src/run-state.js';
+import { useRunStore } from '../lib/use-run-store.js';
 const work = computed(() => state.route.page === 'work'), type = computed(() => work.value ? 'work' : 'chat');
-const messages = ref([]), events = ref([]), input = ref(state.draft), activeId = ref(''), busy = ref(false), loading = ref(false), status = ref('idle'), errorText = ref('');
+const messages = ref([]), events = ref([]), input = ref(state.draft), activeId = ref(''), loading = ref(false);
 state.draft = '';
 const agentId = ref(state.route.params.agent || state.agents[0]?.agentId || ''), clientId = ref(state.clients[0]?.clientId || ''), ragTag = ref(state.route.params.rag || ''), mcpIds = ref([]);
 const optionsOpen = ref(false), maxRound = ref(3), maxRetry = ref(2), maxPace = ref(5), scrollPane = ref(), rename = ref(null), deleteTarget = ref(null), sessionTitle = ref('');
 const sessions = computed(() => state.sessions.filter(s => s.sessionType === type.value));
 const selectedAgent = computed(() => state.agents.find(a => a.agentId === agentId.value));
 const maxMessages = computed(() => work.value ? 3 : 20), userCount = computed(() => messages.value.filter(m => m.messageRole === 'user').length);
-const canSend = computed(() => input.value.trim() && !busy.value && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
-let controller, historyRequest = 0, runTicket = 0, alive = true;
+
+// —— P0 集成：run 归模块级 store 所有，页面只做视图派生。 ——
+const { store, runState } = useRunStore();
+let historyRequest = 0, alive = true;
+// 当前视图来源：实时 run（liveRunActive）还是历史加载（historyViewStatus）。
+const liveRunActive = ref(false);
+// store 里的 run 只在「当前会话」或「新会话尚未绑定」时可见。
+// 避免切到会话 B 时，把会话 A 的运行状态/Stop 按钮显示在 B 上。
+const storeRunVisible = computed(() => {
+  const s = runState.value;
+  if (!s.runId) return false;
+  if (!activeId.value) return true;
+  return !s.sessionId || s.sessionId === activeId.value;
+});
+const historyViewStatus = ref('idle');
+const historyError = ref('');
+// store 状态 → 模板既有的 pill CSS class（不改样式，复用既有 class）。
+const STORE_TO_PILL = { idle: 'idle', preparing: 'running', running: 'running', stopping: 'stopped', stopped: 'stopped', completed: 'complete', failed: 'failed', unknown: 'unknown' };
+const busy = computed(() => storeRunVisible.value && deriveUi(runState.value).showPill);
+const canSend = computed(() => input.value.trim() && deriveUi(runState.value).canSend && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
+const status = computed(() => storeRunVisible.value ? (STORE_TO_PILL[runState.value.status] || 'idle') : historyViewStatus.value);
+const statusText = computed(() => {
+  if (storeRunVisible.value) {
+    const s = runState.value.status;
+    switch (s) {
+      case 'preparing': return '准备中';
+      case 'running': return '正在执行';
+      case 'stopping': return '正在停止';
+      case 'stopped': return '已停止接收';
+      case 'completed': return isDemo.value ? '演示完成' : work.value ? '执行流已完成' : '回复完成';
+      case 'failed': return '执行失败';
+      case 'unknown': return '连接已中断 · 状态未知';
+      default: return '等待开始';
+    }
+  }
+  return ({ idle: '等待开始', history: '历史记录', unknown: '连接已中断 · 状态未知' })[historyViewStatus.value] || '等待开始';
+});
+const errorText = computed(() => {
+  if (historyError.value) return historyError.value;
+  if (!storeRunVisible.value) return '';
+  const s = runState.value.status;
+  if (s === 'failed') return runState.value.error || '执行失败';
+  if (s === 'unknown') {
+    if (runState.value.error === 'EOF without complete') return '连接已结束，但未收到完成事件。请查看会话历史确认执行状态。';
+    if (runState.value.error === 'invalid stage payload') return '收到无法解析的任务阶段，执行状态未知，请查看历史记录。';
+    return ''; // 网络中断等：交给模板的 unknown 提示条。
+  }
+  return '';
+});
 const html = content => DOMPurify.sanitize(marked.parse(content || '', { breaks: true }), { FORBID_TAGS: ['img', 'iframe', 'style', 'input'] });
-const statusText = computed(() => ({ idle: '等待开始', history: '历史记录', running: '正在执行', complete: isDemo.value ? '演示完成' : work.value ? '执行流已完成' : '回复完成', failed: '执行失败', unknown: '连接中断 · 状态未知', stopped: work.value ? '连接已断开' : '已停止接收' })[status.value]);
 function scrollBottom() { nextTick(() => { if (scrollPane.value) scrollPane.value.scrollTop = scrollPane.value.scrollHeight; }); }
 function rememberDemo() { if (isDemo.value && activeId.value) { state.demoHistory[activeId.value] = messages.value.map(m => ({ ...m })); state.demoEvents[activeId.value] = events.value.map(e => ({ ...e })); } }
-function stop() { runTicket++; controller?.abort(); if (busy.value) { status.value = work.value ? 'unknown' : 'stopped'; rememberDemo(); busy.value = false; } }
-async function loadSession(id) {
-  stop(); const ticket = ++historyRequest;
-  activeId.value = id || ''; messages.value = []; events.value = []; errorText.value = ''; status.value = 'idle';
-  if (!id) { loading.value = false; return; }
-  loading.value = true;
-  try {
-    if (isDemo.value) {
-      const saved = state.demoHistory[id];
-      messages.value = saved ? saved.map(m => ({ ...m })) : [
-        { messageRole: 'user', messageContent: state.sessions.find(s => s.sessionId === id)?.sessionTitle || '开始一个新想法', messageSeq: 1 },
-        { messageRole: 'assistant', messageContent: '这是一个**示例会话**。\n\n在这里，你可以继续讨论想法、整理资料，或查看智能体的执行过程。登录并连接服务后，这里会展示你的真实会话记录。', messageSeq: 2 }
-      ]; events.value = state.demoEvents[id] || [];
-    } else {
-      const [history, stages] = await Promise.all([post('/session/message/' + (work.value ? 'work-answer' : 'chat'), { query: { sessionId: id } }), work.value ? post('/session/message/work-sse', { query: { sessionId: id } }) : Promise.resolve([])]);
-      if (ticket !== historyRequest || !alive) return;
-      messages.value = history || [];
-      events.value = (stages || []).map(m => { try { return parseJSON(m.messageContent); } catch { return { sectionContent: m.messageContent, sectionType: '历史记录' }; } });
+function pause(ms, signal) { return new Promise((resolve, reject) => { const cancel = () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); }; const timer = setTimeout(() => { signal.removeEventListener('abort', cancel); resolve(); }, ms); signal.addEventListener('abort', cancel, { once: true }); if (signal.aborted) cancel(); }); }
+
+// —— 真实 transport：只在 prepare/stream*/loadHistory 里碰 post/stream，其余逻辑走 adapter + store。 ——
+const transport = {
+  async prepare({ mode, agentId, clientId, prompt, signal }) {
+    if (!isDemo.value) await post('/ai/armory', { json: { armoryType: mode, armoryId: mode === 'work' ? agentId : clientId }, signal });
+    if (!activeId.value) {
+      const session = isDemo.value
+        ? { sessionId: 'demo-' + Date.now(), sessionTitle: prompt.slice(0, 30), sessionType: mode, createTime: new Date().toISOString().slice(0, 19) }
+        : await post('/session/insert', { query: { sessionTitle: prompt.slice(0, 30), sessionType: mode }, signal });
+      activeId.value = session.sessionId; state.sessions.unshift(session);
+      return { sessionId: session.sessionId };
     }
-    if (messages.value.length || events.value.length) status.value = 'history';
+    return { sessionId: activeId.value };
+  },
+  async streamChat({ clientId, sessionId, prompt, ragTag, mcpIds, signal }, onEvent) {
+    if (isDemo.value) {
+      const text = '很高兴和你一起探索这个想法。\n\n我们可以先把「' + prompt + '」拆解成几个清晰的小问题，再逐步深入。你可以通过下方的知识库和工具设置，给 AI 更多背景。\n\n> 这是演示回复，未调用模型。登录后，你的真实 AI 伙伴会在这里回答。';
+      for (let i = 0; i < text.length; i += 5) { await pause(35, signal); onEvent({ data: text.slice(i, i + 5) }); }
+      return;
+    }
+    await stream('/ai/chat/stream', { clientId, sessionId, userMessage: prompt, mcpIdList: mcpIds, ...(ragTag ? { ragTag } : {}) }, onEvent, signal);
+  },
+  async streamWork({ agentId, sessionId, prompt, maxRound, maxRetry, maxPace, signal }, onEvent) {
+    if (isDemo.value) {
+      const stageTypes = ({ step: ['inspector_mcp', 'planner_step', 'runner_result', 'replier_overview'], loop: ['analyzer_demand', 'analyzer_strategy', 'performer_result', 'summarizer_overview'], react: ['observer_demand', 'reasoner_action', 'actor_result', 'evaluator_overview'] })[selectedAgent.value?.agentType] || ['inspector_mcp', 'planner_step', 'runner_result', 'replier_overview'];
+      let stageIndex = 0;
+      for (const entity of [
+        { clientType: 'INSPECTOR', sectionType: 'inspector_mcp', sectionContent: '演示：识别任务所需的检索与资料阅读能力。' },
+        { clientType: 'PLANNER', sectionType: 'planner_step', sectionContent: '1. 明确目标与输出格式\n2. 收集和整理相关信息\n3. 形成可执行的结论' },
+        { clientType: 'RUNNER', sectionType: 'runner_result', sectionContent: '演示：阶段信息会在此实时展开，帮助你了解智能体正在做什么。' },
+        { clientType: 'REPLIER', sectionType: 'replier_overview', sectionContent: '### 让目标更清晰一点\n\n你提出了：**' + prompt.replace(/[<>]/g, '') + '**\n\n一个好的开始是明确三件事：\n\n1. **期望成果**：最终希望获得报告、方案，还是可执行的步骤？\n2. **已知信息**：可以补充背景，或关联自己的知识库。\n3. **完成标准**：定义范围与约束，让智能体知道何时完成。\n\n> 以上为界面演示内容，未实际检索或调用模型。登录后可以执行真实任务。' }
+      ]) { entity.sectionType = stageTypes[stageIndex++]; entity.clientType = entity.sectionType.split('_')[0].toUpperCase(); await pause(650, signal); onEvent({ event: 'message', data: JSON.stringify(entity) }); }
+      onEvent({ event: 'complete', data: '{"clientType":"complete","sectionContent":"执行完成"}' });
+      return;
+    }
+    await stream('/ai/work/execute', { agentId, agentDesc: selectedAgent.value?.agentDesc, sessionId, userMessage: prompt, maxRound, maxRetry, maxPace }, onEvent, signal);
+  },
+  async loadHistory({ mode, sessionId }) {
+    if (isDemo.value) {
+      const saved = state.demoHistory[sessionId];
+      return {
+        messages: saved ? saved.map(m => ({ ...m })) : [
+          { messageRole: 'user', messageContent: state.sessions.find(s => s.sessionId === sessionId)?.sessionTitle || '开始一个新想法', messageSeq: 1 },
+          { messageRole: 'assistant', messageContent: '这是一个**示例会话**。\n\n在这里，你可以继续讨论想法、整理资料，或查看智能体的执行过程。登录并连接服务后，这里会展示你的真实会话记录。', messageSeq: 2 }
+        ],
+        stages: state.demoEvents[sessionId] || []
+      };
+    }
+    const [history, stages] = await Promise.all([post('/session/message/' + (mode === 'work' ? 'work-answer' : 'chat'), { query: { sessionId } }), mode === 'work' ? post('/session/message/work-sse', { query: { sessionId } }) : Promise.resolve([])]);
+    return { messages: history || [], stages: (stages || []).map(m => { try { return parseJSON(m.messageContent); } catch { return { sectionContent: m.messageContent, sectionType: '历史记录' }; } }) };
+  }
+};
+
+const adapter = createConversationAdapter({
+  store,
+  transport,
+  parse: parseJSON,
+  onUserMessage: m => {
+    if (!alive || !liveRunActive.value) return;
+    messages.value.push({ messageRole: 'user', messageContent: m.content, messageSeq: messages.value.length + 1 });
+    if (!work.value) messages.value.push({ messageRole: 'assistant', messageContent: '', messageSeq: messages.value.length + 1 });
+    input.value = ''; scrollBottom();
+  },
+  onToken: data => {
+    if (!alive || !liveRunActive.value) return;
+    const last = messages.value[messages.value.length - 1];
+    if (last && last.messageRole === 'assistant') { last.messageContent += data; scrollBottom(); }
+  },
+  onStage: stage => {
+    if (!alive || !liveRunActive.value) return;
+    const entity = stage.raw && typeof stage.raw === 'object' ? stage.raw : { sectionType: stage.sectionType, clientType: stage.clientType, round: stage.round, step: stage.step, sectionContent: stage.content };
+    events.value.push(entity);
+    if (['summarizer_overview', 'replier_overview', 'evaluator_overview'].includes(entity.sectionType)) messages.value.push({ messageRole: 'assistant', messageContent: entity.sectionContent, messageSeq: messages.value.length + 1 });
     scrollBottom();
-  } catch (error) { if (ticket === historyRequest) errorText.value = error.message; }
-  finally { if (ticket === historyRequest) loading.value = false; }
+  }
+});
+
+// demo 会话在 run 进入终态时落盘，保证切走再切回能看到演示历史。
+watch(runState, (next, prev) => {
+  if (isDemo.value && activeId.value && ['completed', 'failed', 'stopped', 'unknown'].includes(next.status) && prev && ['preparing', 'running', 'stopping'].includes(prev.status)) rememberDemo();
+});
+// 页面重建后 run 可能仍在 store 里；终态时重新拉一次历史，避免“已完成但没有答案”。
+watch(() => runState.value.status, status => {
+  if (!liveRunActive.value && activeId.value && ['completed', 'failed', 'stopped', 'unknown'].includes(status)) {
+    loadSession(activeId.value);
+  }
+});
+
+function stop() {
+  // 只停止当前会话的 run；切到别的会话时不要把 A 的 Stop 显示/作用到 B。
+  if (!storeRunVisible.value) return;
+  const runId = runState.value.runId;
+  if (runId) store.stop(runId);
+  else adapter.stop();
+}
+function resetRunIfNotActive() {
+  const s = runState.value.status;
+  if (s !== 'preparing' && s !== 'running' && s !== 'stopping') store.reset();
+}
+async function loadSession(id) {
+  const ticket = ++historyRequest;
+  activeId.value = id || ''; messages.value = []; events.value = []; historyError.value = ''; loading.value = true;
+  liveRunActive.value = false; historyViewStatus.value = 'idle';
+  if (!id) { resetRunIfNotActive(); loading.value = false; return; }
+  try {
+    const result = await adapter.loadHistory({ mode: type.value, sessionId: id });
+    if (ticket !== historyRequest || !alive) return;
+    messages.value = result.messages || [];
+    events.value = result.stages || [];
+    historyViewStatus.value = result.status || 'idle';
+    resetRunIfNotActive();
+    scrollBottom();
+  } catch (error) {
+    if (ticket === historyRequest && alive) historyError.value = error.message;
+  } finally {
+    if (ticket === historyRequest) loading.value = false;
+  }
 }
 watch(() => state.route.params.session, id => loadSession(id), { immediate: true });
 watch(() => state.route.params.agent, id => { if (id) agentId.value = id; });
 watch(() => state.clients, list => { if (!list.some(c => c.clientId === clientId.value)) clientId.value = list[0]?.clientId || ''; });
 watch(() => state.agents, list => { if (!list.some(a => a.agentId === agentId.value)) agentId.value = list[0]?.agentId || ''; });
 function chooseSession(session) { nav(type.value, { session: session.sessionId, agent: agentId.value }); }
-function newSession() { stop(); if (!state.route.params.session) loadSession(); else nav(type.value, { agent: agentId.value }); }
-function pause(ms, signal) { return new Promise((resolve, reject) => { const cancel = () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); }; const timer = setTimeout(() => { signal.removeEventListener('abort', cancel); resolve(); }, ms); signal.addEventListener('abort', cancel, { once: true }); if (signal.aborted) cancel(); }); }
+function newSession() { if (!state.route.params.session) loadSession(); else nav(type.value, { agent: agentId.value }); }
 async function send() {
   if (!canSend.value) return;
   if (work.value && ![maxRound.value, maxRetry.value, maxPace.value].every(n => Number.isInteger(n) && n >= 1)) { notify('执行参数必须为正整数', 'info'); return; }
   if (!activeId.value && sessions.value.length >= 3) { notify('每种类型最多保留 3 个会话，请选择已有会话或删除一个旧会话', 'info'); return; }
   const prompt = input.value.trim();
-  busy.value = true; errorText.value = ''; status.value = 'running';
-  controller = new AbortController(); const signal = controller.signal, ticket = ++runTicket;
+  liveRunActive.value = true; historyError.value = '';
   try {
-    if (!isDemo.value) await post('/ai/armory', { json: { armoryType: type.value, armoryId: work.value ? agentId.value : clientId.value }, signal });
-    if (!alive || ticket !== runTicket) return;
-    if (!activeId.value) {
-      const session = isDemo.value ? { sessionId: 'demo-' + Date.now(), sessionTitle: prompt.slice(0, 30), sessionType: type.value, createTime: new Date().toISOString().slice(0, 19) } : await post('/session/insert', { query: { sessionTitle: prompt.slice(0, 30), sessionType: type.value }, signal });
-      if (!alive || ticket !== runTicket) return;
-      activeId.value = session.sessionId; state.sessions.unshift(session);
-    }
-    messages.value.push({ messageRole: 'user', messageContent: prompt, messageSeq: messages.value.length + 1 }); input.value = ''; scrollBottom();
-    let replyIndex = -1, completeSeen = false, errorSeen = false;
-    if (!work.value) { replyIndex = messages.value.length; messages.value.push({ messageRole: 'assistant', messageContent: '', messageSeq: messages.value.length + 1 }); }
-    const onEvent = event => {
-      if (!alive || signal.aborted || ticket !== runTicket) return;
-      if (!work.value) { messages.value[replyIndex].messageContent += event.data; scrollBottom(); return; }
-      if (event.event === 'error') { errorSeen = true; status.value = 'failed'; errorText.value = event.data; return; }
-      if (event.event === 'complete') { const complete = parseJSON(event.data); if (complete.clientType !== 'complete') throw new Error('完成事件格式异常，执行状态未知'); completeSeen = true; if (!errorSeen) status.value = 'complete'; return; }
-      let entity;
-      try { entity = parseJSON(event.data); } catch { throw new Error('收到无法解析的任务阶段，执行状态未知，请查看历史记录'); }
-      events.value.push(entity);
-      if (['summarizer_overview', 'replier_overview', 'evaluator_overview'].includes(entity.sectionType)) messages.value.push({ messageRole: 'assistant', messageContent: entity.sectionContent, messageSeq: messages.value.length + 1 });
-      scrollBottom();
-    };
-    if (isDemo.value) {
-      if (work.value) {
-        const stageTypes = ({ step: ['inspector_mcp', 'planner_step', 'runner_result', 'replier_overview'], loop: ['analyzer_demand', 'analyzer_strategy', 'performer_result', 'summarizer_overview'], react: ['observer_demand', 'reasoner_action', 'actor_result', 'evaluator_overview'] })[selectedAgent.value?.agentType] || ['inspector_mcp', 'planner_step', 'runner_result', 'replier_overview'];
-        let stageIndex = 0;
-        for (const entity of [
-          { clientType: 'INSPECTOR', sectionType: 'inspector_mcp', sectionContent: '演示：识别任务所需的检索与资料阅读能力。' },
-          { clientType: 'PLANNER', sectionType: 'planner_step', sectionContent: '1. 明确目标与输出格式\n2. 收集和整理相关信息\n3. 形成可执行的结论' },
-          { clientType: 'RUNNER', sectionType: 'runner_result', sectionContent: '演示：阶段信息会在此实时展开，帮助你了解智能体正在做什么。' },
-          { clientType: 'REPLIER', sectionType: 'replier_overview', sectionContent: '### 让目标更清晰一点\n\n你提出了：**' + prompt.replace(/[<>]/g, '') + '**\n\n一个好的开始是明确三件事：\n\n1. **期望成果**：最终希望获得报告、方案，还是可执行的步骤？\n2. **已知信息**：可以补充背景，或关联自己的知识库。\n3. **完成标准**：定义范围与约束，让智能体知道何时完成。\n\n> 以上为界面演示内容，未实际检索或调用模型。登录后可以执行真实任务。' }
-        ]) { entity.sectionType = stageTypes[stageIndex++]; entity.clientType = entity.sectionType.split('_')[0].toUpperCase(); await pause(650, signal); onEvent({ event: 'message', data: JSON.stringify(entity) }); }
-        onEvent({ event: 'complete', data: '{"clientType":"complete","sectionContent":"执行完成"}' });
-      } else {
-        const text = '很高兴和你一起探索这个想法。\n\n我们可以先把「' + prompt + '」拆解成几个清晰的小问题，再逐步深入。你可以通过下方的知识库和工具设置，给 AI 更多背景。\n\n> 这是演示回复，未调用模型。登录后，你的真实 AI 伙伴会在这里回答。';
-        for (let i = 0; i < text.length; i += 5) { await pause(35, signal); onEvent({ data: text.slice(i, i + 5) }); }
-      }
-    } else if (work.value) {
-      await stream('/ai/work/execute', { agentId: agentId.value, agentDesc: selectedAgent.value.agentDesc, sessionId: activeId.value, userMessage: prompt, maxRound: maxRound.value, maxRetry: maxRetry.value, maxPace: maxPace.value }, onEvent, signal);
-    } else {
-      await stream('/ai/chat/stream', { clientId: clientId.value, sessionId: activeId.value, userMessage: prompt, mcpIdList: mcpIds.value, ...(ragTag.value ? { ragTag: ragTag.value } : {}) }, onEvent, signal);
-    }
-    if (signal.aborted || ticket !== runTicket || !alive) return;
-    status.value = errorSeen ? 'failed' : work.value ? (completeSeen ? 'complete' : 'unknown') : 'complete';
-    if (work.value && !completeSeen && !errorSeen) errorText.value = '连接已结束，但未收到完成事件。请查看会话历史确认执行状态。';
+    await adapter.send({ mode: type.value, prompt, sessionId: activeId.value || undefined, agentId: agentId.value, clientId: clientId.value, ragTag: ragTag.value, mcpIds: mcpIds.value, maxRound: maxRound.value, maxRetry: maxRetry.value, maxPace: maxPace.value });
   } catch (error) {
-    if (ticket !== runTicket || !alive) return;
-    if (error.name === 'AbortError') status.value = work.value ? 'unknown' : 'stopped';
-    else { errorText.value = error.message; status.value = work.value && events.value.length ? 'unknown' : 'failed'; }
-  } finally {
-    if (ticket === runTicket && alive) { busy.value = false; rememberDemo(); }
+    // store 已写入终态（failed/stopped/unknown），错误展示由 errorText computed 从 store 派生。
   }
 }
 async function saveTitle() { try { const target = rename.value; if (!sessionTitle.value.trim()) return; if (!isDemo.value) await post('/session/update', { query: { sessionId: target.sessionId, sessionTitle: sessionTitle.value.trim() } }); target.sessionTitle = sessionTitle.value.trim(); rename.value = null; notify('会话名称已更新'); } catch (error) { report(error); } }
 async function removeSession() { try { const id = deleteTarget.value.sessionId; if (!isDemo.value) await post('/session/delete', { query: { sessionId: id } }); state.sessions = state.sessions.filter(s => s.sessionId !== id); deleteTarget.value = null; if (activeId.value === id) { nav(type.value); loadSession(); } notify('会话已删除'); } catch (error) { report(error); } }
 async function copy(text) { try { await navigator.clipboard.writeText(text); notify('已复制回复'); } catch { notify('无法访问剪贴板，请选择文本复制', 'info'); } }
-onBeforeUnmount(() => { alive = false; historyRequest++; stop(); });
+onBeforeUnmount(() => { alive = false; historyRequest++; });
 </script>
 <template>
   <div class="conversation-layout">

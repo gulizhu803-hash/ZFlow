@@ -1,0 +1,10 @@
+{
+  "name": "zflow-ui-v2-p0",
+  "private": true,
+  "version": "0.0.0",
+  "description": "ZFlow Quiet Canvas 2.0 P0：运行状态机、Stop 语义、unknown 与防重复提交（纯逻辑，独立模块，未集成到页面）",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

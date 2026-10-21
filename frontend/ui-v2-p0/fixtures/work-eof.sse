@@ -1,0 +1,5 @@
+event: message
+data: {"clientType":"PLANNER","sectionType":"planner_step","sectionTitle":"任务规划","sectionContent":"制定执行计划。","round":1,"step":1}
+
+event: message
+data: {"clientType":"RUNNER","sectionType":"runner_result","sectionTitle":"运行结果","sectionContent":"执行中……","round":1,"step":2}

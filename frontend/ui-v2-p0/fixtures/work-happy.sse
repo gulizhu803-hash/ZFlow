@@ -1,0 +1,11 @@
+event: message
+data: {"clientType":"INSPECTOR","sectionType":"inspector_mcp","sectionTitle":"工具检查","sectionContent":"识别任务所需的检索与资料阅读能力。","round":1,"step":1}
+
+event: message
+data: {"clientType":"PLANNER","sectionType":"planner_step","sectionTitle":"任务规划","sectionContent":"1. 明确目标与输出格式\n2. 收集和整理相关信息","round":1,"step":2}
+
+event: message
+data: {"clientType":"RUNNER","sectionType":"runner_result","sectionTitle":"运行结果","sectionContent":"已按计划生成可执行的结论。","round":1,"step":3}
+
+event: complete
+data: {"clientType":"complete","sectionContent":"执行完成"}

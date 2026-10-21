@@ -1,0 +1,5 @@
+event: message
+data: {"clientType":"INSPECTOR","sectionType":"inspector_mcp","sectionTitle":"工具检查","sectionContent":"识别任务所需的检索能力。","round":1,"step":1}
+
+event: error
+data: 模型调用失败：超出速率限制，请稍后重试。
