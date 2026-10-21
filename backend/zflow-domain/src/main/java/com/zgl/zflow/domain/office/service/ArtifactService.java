@@ -27,7 +27,12 @@ public class ArtifactService {
         if(baseVersion<1 || baseVersion==Integer.MAX_VALUE) throw OfficeException.invalid("baseVersion 不合法");
         String normalized=validator.normalize(xml);
         String requestHash=hash(json(map("artifactId",artifactId,"baseVersion",baseVersion,"contentHash",hash(normalized))));
-        OfficeRevision old=repository.findSave(ownerId,artifactId,key);
+        OfficeRevision old;
+        try { old=repository.findSave(ownerId,artifactId,key); }
+        catch(RuntimeException failure) {
+            if(OfficeRunService.isDatabaseFailure(failure)) throw OfficeRunService.unavailable();
+            throw failure;
+        }
         if(old!=null) return OfficeTransactions.replaySave(old,requestHash);
         DiagramValidationReport report=validator.validate(normalized,false);
         if(!report.valid()) throw new OfficeException(422,"INVALID_DIAGRAM_XML","图表校验失败",map("validationReport",report));
@@ -38,11 +43,15 @@ public class ArtifactService {
         IArtifactStorage.StoredFile file=storage.writeImmutable(ownerId,artifactId,revision.getRevisionId(),normalized.getBytes(StandardCharsets.UTF_8));
         revision.setObjectKey(file.objectKey()); revision.setContentHash(file.contentHash()); revision.setSizeBytes(file.sizeBytes());
         try { return transactions.save(ownerId,revision); }
-        catch(DataAccessException|TransactionException failure) {
+        catch(RuntimeException failure) {
+            if(!OfficeRunService.isDatabaseFailure(failure)) throw failure;
             try {
                 OfficeRevision committed=repository.findSave(ownerId,artifactId,key);
                 if(committed!=null) return OfficeTransactions.replaySave(committed,requestHash);
-            } catch(DataAccessException|TransactionException unavailable) { throw OfficeRunService.unknownCommit(); }
+            } catch(RuntimeException unavailableFailure) {
+                if(!OfficeRunService.isDatabaseFailure(unavailableFailure)) throw unavailableFailure;
+                throw OfficeRunService.unknownCommit();
+            }
             throw failure;
         }
     }
