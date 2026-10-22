@@ -14,10 +14,38 @@ async function request(path, { json, query, form, signal, stream = false } = {})
   try { return await fetch(url, { method: 'POST', headers, body: form || (json !== undefined ? stringifyJSON(json) : undefined), signal }); }
   catch (error) { if (error.name === 'AbortError') throw error; throw new ApiError('无法连接服务，请确认后端已启动且地址配置正确'); }
 }
+// 访问令牌 2 小时过期；遇到 401 先静默换一枚，再重放一次请求。
+async function refreshAccessToken(stale) {
+  try {
+    const response = await fetch(new URL(API_ROOT + '/user/auth/refresh', window.location.origin), {
+      method: 'POST', headers: { Accept: 'application/json', Authorization: `Bearer ${stale}` }
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const token = payload?.data?.token;
+    const current = readAuth();
+    if (!token || !current) return null;
+    saveAuth({ ...current, token });
+    return token;
+  } catch { return null; }
+}
 async function guard(operation) {
   const token = readAuth()?.token;
   try { return await operation(); }
-  catch (error) { if (error.status === 401 && token === readAuth()?.token) { saveAuth(null); window.dispatchEvent(new Event('miniagent:unauthorized')); } throw error; }
+  catch (error) {
+    if (error.status === 401 && token && token === readAuth()?.token) {
+      const fresh = await refreshAccessToken(token);
+      if (fresh) {
+        try { return await operation(); }
+        catch (retryError) {
+          if (retryError.status === 401) { saveAuth(null); window.dispatchEvent(new Event('miniagent:unauthorized')); }
+          throw retryError;
+        }
+      }
+      saveAuth(null); window.dispatchEvent(new Event('miniagent:unauthorized'));
+    }
+    throw error;
+  }
 }
 export function post(path, options) { return guard(async () => checkResponse(await request(path, options))); }
 export function stream(path, json, onEvent, signal) { return guard(async () => consumeSSE(await request(path, { json, stream: true, signal }), onEvent)); }
