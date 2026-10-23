@@ -6,4 +6,5 @@ import './styles/shell.css';
 import './styles/home-v2.css';
 import './styles/conversation-v2.css';
 import './styles/run-v2.css';
+import './styles/agents-v2.css';
 createApp(App).mount('#app');
