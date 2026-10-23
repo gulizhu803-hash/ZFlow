@@ -1,0 +1,136 @@
+/* ZFlow Run layout (智能任务) — scoped to .conversation-page--run.
+   Loaded after conversation-v2.css; never touches .conversation-page--focus.
+   Grid: 72 rail (App shell) + 680 thread + 360 inspector. */
+
+/* ---------- structural wrappers ---------- */
+.conversation-page--run { background: var(--z-canvas); overflow-x: hidden; }
+.conversation-page--run .conversation-sidebar { display: none; }
+.conversation-page--run .mobile-conversation-tools { display: none; }
+.conversation-page--run .conversation-main { min-width: 0; background: var(--z-canvas); }
+
+/* ---------- 56px session header ---------- */
+.conversation-page--run .conversation-header {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 var(--z-space-6);
+  gap: var(--z-space-3);
+  border-bottom: 1px solid var(--z-line);
+  background: var(--z-paper);
+}
+.conversation-page--run .conversation-title-button {
+  display: flex;
+  align-items: center;
+  gap: var(--z-space-2);
+  min-height: 32px;
+  max-width: 320px;
+  padding: 0 var(--z-space-2);
+  border-radius: var(--z-r-control);
+  color: var(--z-ink);
+  font: 500 13px/1 var(--z-sans);
+}
+.conversation-page--run .conversation-title-button:hover { background: var(--z-fill); }
+.conversation-page--run .conversation-title-button svg { flex-shrink: 0; }
+.conversation-page--run .conversation-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.conversation-page--run .conversation-header__spacer { flex: 1; }
+.conversation-page--run .status-pill {
+  flex: none;
+  background: var(--z-fill);
+  color: var(--z-ink-2);
+  font: 500 10px/1 var(--z-sans);
+  padding: 5px 9px;
+  border-radius: var(--z-r-chip);
+}
+.conversation-page--run .status-pill.running,
+.conversation-page--run .status-pill.complete { background: var(--z-blue-soft); color: var(--z-blue); }
+.conversation-page--run .status-pill.failed { background: rgba(215, 0, 21, .10); color: var(--z-red); }
+.conversation-page--run .status-pill.unknown { background: rgba(178, 80, 0, .12); color: var(--z-orange); }
+.conversation-page--run .tag.sage { flex: none; }
+.conversation-page--run .context-button {
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 var(--z-space-3);
+  border-radius: var(--z-r-control);
+  color: var(--z-ink-2);
+  font: 500 12px/1 var(--z-sans);
+}
+.conversation-page--run .context-button:hover { background: var(--z-fill); color: var(--z-ink); }
+
+/* ---------- body: 680 thread + 360 inspector ---------- */
+.conversation-page--run .conversation-body { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: row; }
+.conversation-page--run .conversation-thread {
+  flex: 1;
+  min-width: 0;
+  max-width: var(--z-thread);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.conversation-page--run .run-inspector {
+  flex: 0 0 var(--z-inspector);
+  width: var(--z-inspector);
+  max-width: var(--z-inspector);
+  border-left: 1px solid var(--z-line);
+  background: var(--z-paper);
+  overflow: hidden;
+}
+.conversation-page--run .conversation-scroll { flex: 1; min-height: 0; padding: var(--z-space-5) var(--z-space-6) 0; overflow-x: hidden; }
+.conversation-page--run .conversation-compose { width: 100%; max-width: 100%; margin: 0 auto; padding: var(--z-space-3) var(--z-space-6) var(--z-space-5); background: transparent; }
+.conversation-page--run .message-list,
+.conversation-page--run .conversation-welcome,
+.conversation-page--run .conversation-error { max-width: 100%; }
+
+/* ---------- Activity Pill + Stage Rail band ---------- */
+.conversation-page--run .run-stack { flex: none; display: flex; flex-direction: column; gap: var(--z-space-2); padding: var(--z-space-4) var(--z-space-6) var(--z-space-2); min-width: 0; border-bottom: 1px solid var(--z-line); }
+/* 胶囊按内容宽度靠左；跑道仍然撑满正文宽度。 */
+.conversation-page--run .run-stack > .activity-pill { align-self: flex-start; }
+
+/* ---------- composer: 680 + Stop 形变 ---------- */
+.conversation-page--run .send-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--z-r-capsule);
+  background: var(--z-blue-fill);
+  color: var(--z-on-blue);
+}
+.conversation-page--run .send-button:hover { background: var(--z-blue-hover); }
+.conversation-page--run .send-button--stop {
+  width: auto;
+  min-width: 96px;
+  padding: 0 var(--z-space-3);
+  gap: 6px;
+  border-radius: var(--z-r-control);
+  background: var(--z-ink);
+  color: var(--z-paper);
+}
+.conversation-page--run .send-button--stop:hover { background: var(--z-ink); opacity: .88; }
+.conversation-page--run .send-button__text { font: 500 12px/1 var(--z-sans); }
+.conversation-page--run .chat-composer { border-radius: var(--z-r-card); border-color: var(--z-line-strong); }
+
+/* ---------- <1280: inspector becomes a Sheet ---------- */
+.conversation-page--run .run-inspector-button { display: none; }
+@media (max-width: 1279px) {
+  .conversation-page--run .run-inspector { display: none; }
+  .conversation-page--run .run-inspector-button { display: inline-flex; }
+}
+
+/* ---------- 768–1023: tighter, still 680 thread ---------- */
+@media (max-width: 1023px) {
+  .conversation-page--run .conversation-header { padding: 0 var(--z-space-4); }
+  .conversation-page--run .run-stack { padding: var(--z-space-3) var(--z-space-4) var(--z-space-2); }
+  .conversation-page--run .conversation-scroll { padding: var(--z-space-4) var(--z-space-4) 0; }
+  .conversation-page--run .conversation-compose { padding: var(--z-space-3) var(--z-space-4) var(--z-space-4); }
+}
+
+/* ---------- <768: no rail, 44px header, full-width thread ---------- */
+@media (max-width: 767px) {
+  .conversation-page--run .conversation-header { height: 44px; min-height: 44px; padding: 0 var(--z-space-4); gap: var(--z-space-2); }
+  .conversation-page--run .conversation-title-button { max-width: 150px; }
+  .conversation-page--run .conversation-thread { max-width: 100%; }
+  .conversation-page--run .run-stack { padding: var(--z-space-3) var(--z-space-3) var(--z-space-2); }
+  .conversation-page--run .conversation-scroll { padding: var(--z-space-3) var(--z-space-3) 0; }
+  .conversation-page--run .conversation-compose { padding: var(--z-space-2) var(--z-space-3) var(--z-space-3); }
+  .conversation-page--run .send-button--stop { min-width: 84px; }
+}
