@@ -7,19 +7,24 @@ import Modal from '../components/Modal.vue';
 import Sheet from '../components/Sheet.vue';
 import ContextRail from '../components/conversation/ContextRail.vue';
 import SessionSheet from '../components/conversation/SessionSheet.vue';
+import ActivityPill from '../components/conversation/ActivityPill.vue';
+import StageRail from '../components/conversation/StageRail.vue';
+import RunInspector from '../components/conversation/RunInspector.vue';
+import { deriveRunStages } from '../lib/run-stages.js';
 import { state, isDemo, nav, notify, report } from '../lib/workspace.js';
 import { post, stream } from '../lib/api.js';
 import { parseJSON } from '../lib/protocol.js';
-import { strategies, sectionLabels } from '../lib/demo.js';
 import { createConversationAdapter } from '../../ui-v2-p0/src/conversation-adapter.js';
 import { deriveUi } from '../../ui-v2-p0/src/run-state.js';
 import { useRunStore, subscribeRunEvents, emitRunEvent } from '../lib/use-run-store.js';
 const work = computed(() => state.route.page === 'work'), type = computed(() => work.value ? 'work' : 'chat');
 const focus = computed(() => !work.value);
+// Work 页面即 Run 模式（只作用于 Work，Chat Focus 不回归）。
+const run = computed(() => work.value);
 const messages = ref([]), events = ref([]), input = ref(state.draft), activeId = ref(''), loading = ref(false);
 state.draft = '';
 const agentId = ref(state.route.params.agent || state.agents[0]?.agentId || ''), clientId = ref(state.clients[0]?.clientId || ''), ragTag = ref(state.route.params.rag || ''), mcpIds = ref([]);
-const optionsOpen = ref(false), sessionsOpen = ref(false), contextOpen = ref(false), maxRound = ref(3), maxRetry = ref(2), maxPace = ref(5), scrollPane = ref(), rename = ref(null), deleteTarget = ref(null), sessionTitle = ref('');
+const sessionsOpen = ref(false), contextOpen = ref(false), inspectorOpen = ref(false), maxRound = ref(3), maxRetry = ref(2), maxPace = ref(5), scrollPane = ref(), rename = ref(null), deleteTarget = ref(null), sessionTitle = ref('');
 const sessions = computed(() => state.sessions.filter(s => s.sessionType === type.value));
 const currentTitle = computed(() => sessions.value.find(s => s.sessionId === activeId.value)?.sessionTitle || (work.value ? '智能任务' : '自由对话'));
 const recentRuns = computed(() => (isDemo.value ? Object.keys(state.demoHistory || {}).map(id => state.sessions.find(s => s.sessionId === id)).filter(Boolean).slice(0, 5) : []));
@@ -44,6 +49,22 @@ const historyViewStatus = ref('idle');
 const historyError = ref('');
 // store 状态 → 模板既有的 pill CSS class（不改样式，复用既有 class）。
 const STORE_TO_PILL = { idle: 'idle', preparing: 'running', running: 'running', stopping: 'stopped', stopped: 'stopped', completed: 'complete', failed: 'failed', unknown: 'unknown' };
+// —— Run 视图：Pill / StageRail / Inspector 全部从同一份 run 状态派生，不各自维护 boolean。 ——
+const runStatus = computed(() => (storeRunVisible.value ? runState.value.status : historyViewStatus.value));
+const showPill = computed(() => runStatus.value !== 'idle' && runStatus.value !== 'history');
+// 实时 run 优先；没有 run 时用历史阶段回填（只读展示，不伪造运行中）。
+const runStageEntries = computed(() => {
+  if (storeRunVisible.value && runState.value.stages.length) return runState.value.stages;
+  return events.value.map(event => ({
+    stage: { sectionType: event.sectionType, clientType: event.clientType, sectionContent: event.sectionContent, label: event.sectionTitle },
+    at: null
+  }));
+});
+const runStages = computed(() => deriveRunStages({
+  status: runStatus.value,
+  stages: runStageEntries.value,
+  updatedAt: runState.value.updatedAt
+}));
 const busy = computed(() => storeRunVisible.value && deriveUi(runState.value).showPill);
 const canSend = computed(() => input.value.trim() && deriveUi(runState.value).canSend && !otherRunActive.value && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
 const status = computed(() => storeRunVisible.value ? (STORE_TO_PILL[runState.value.status] || 'idle') : historyViewStatus.value);
@@ -75,6 +96,27 @@ const errorText = computed(() => {
   }
   return '';
 });
+// Inspector 复用 Composer 之外同一批执行参数：这里只做绑定，不新增后端请求。
+const runInspectorBind = computed(() => ({
+  maxRound: maxRound.value,
+  maxRetry: maxRetry.value,
+  maxPace: maxPace.value,
+  ragTag: ragTag.value,
+  mcpIds: mcpIds.value,
+  rags: state.rags,
+  mcps: state.mcps,
+  busy: busy.value,
+  view: runStages.value,
+  status: runStatus.value,
+  error: errorText.value,
+  'onUpdate:maxRound': value => { maxRound.value = value; },
+  'onUpdate:maxRetry': value => { maxRetry.value = value; },
+  'onUpdate:maxPace': value => { maxPace.value = value; },
+  'onUpdate:ragTag': value => { ragTag.value = value; },
+  'onUpdate:mcpIds': value => { mcpIds.value = value; },
+  onRetry: () => retryRun(),
+  onHistory: () => loadSession(activeId.value)
+}));
 const html = content => DOMPurify.sanitize(marked.parse(content || '', { breaks: true }), { FORBID_TAGS: ['img', 'iframe', 'style', 'input'] });
 function scrollBottom() { nextTick(() => { if (scrollPane.value) scrollPane.value.scrollTop = scrollPane.value.scrollHeight; }); }
 function rememberDemo() { if (isDemo.value && activeId.value) { state.demoHistory[activeId.value] = messages.value.map(m => ({ ...m })); state.demoEvents[activeId.value] = events.value.map(e => ({ ...e })); } }
@@ -208,6 +250,17 @@ function stop() {
   if (runId) store.stop(runId);
   else adapter.stop();
 }
+// 用户明确触发的重试：不自动重发，参数与草稿原样沿用。
+function retryRun() {
+  if (busy.value) return;
+  if (!input.value.trim() && runState.value.prompt) input.value = runState.value.prompt;
+  send();
+}
+// ≥1280 常驻 Inspector；<1280 才需要打开 Sheet。
+function openInspector() {
+  if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1280px)').matches) return;
+  inspectorOpen.value = true;
+}
 function resetRunIfNotActive() {
   const s = runState.value.status;
   if (s !== 'preparing' && s !== 'running' && s !== 'stopping') store.reset();
@@ -264,22 +317,22 @@ async function copy(text) { try { await navigator.clipboard.writeText(text); not
 onBeforeUnmount(() => { alive = false; historyRequest++; pendingRunEvents = []; unsubscribeRunEvents(); });
 </script>
 <template>
-  <div class="conversation-page conversation-layout" :class="focus ? 'conversation-page--focus' : ''">
+  <div class="conversation-page conversation-layout" :class="run ? 'conversation-page--run' : 'conversation-page--focus'">
     <aside class="conversation-sidebar"><div class="row spread"><h2>{{ work ? '任务记录' : '我的对话' }}</h2><button class="icon-button" aria-label="新建会话" @click="newSession"><Icon name="plus" :size="18" /></button></div><button class="secondary-button full" @click="newSession"><Icon name="plus" :size="16" />{{ work ? '开始新任务' : '开启新对话' }}</button><span class="conversation-section-label">最近 · {{ sessions.length }} / 3</span><div class="history-list"><div v-for="session in sessions" :key="session.sessionId" class="history-item" :class="{ active: activeId === session.sessionId }"><button class="history-title" @click="chooseSession(session)"><Icon :name="work ? 'workflow' : 'chat'" :size="15" /><span>{{ session.sessionTitle }}</span></button><div class="history-actions"><button class="icon-button" aria-label="重命名会话" @click="rename = session; sessionTitle = session.sessionTitle"><Icon name="pen" :size="13" /></button><button class="icon-button" aria-label="删除会话" @click="deleteTarget = session"><Icon name="trash" :size="13" /></button></div></div></div><div class="conversation-tip"><Icon name="sparkles" :size="18" /><p>{{ work ? '把目标说清楚，让每一步都有方向。' : '好问题，是一切好想法的开始。' }}</p></div></aside>
-    <section class="conversation-main"><header class="conversation-header"><template v-if="focus"><button class="conversation-title-button" type="button" @click="sessionsOpen = true"><Icon name="chat" :size="16" /><span class="conversation-title">{{ currentTitle }}</span><Icon name="down" :size="13" /></button><span class="status-pill" :class="status">{{ statusText }}</span><span v-if="isDemo" class="tag sage">演示体验</span><span class="conversation-header__spacer"></span><button class="context-button" type="button" aria-label="上下文" @click="contextOpen = true"><Icon name="settings" :size="15" /><span>上下文</span></button></template><template v-else><div class="row"><span class="quick-icon sage"><Icon :name="work ? 'sparkles' : 'chat'" :size="19" /></span><div><h1>{{ work ? '和智能体一起，把想法落地' : '给每一个好奇，留一点空间' }}</h1><p>{{ work ? '目标、行动与结果，清晰可见。' : '聊想法，读资料，找到新的可能。' }}</p></div></div><span v-if="isDemo" class="tag sage">演示体验</span></template></header>
-      <div class="conversation-body"><div class="conversation-thread"><div class="mobile-conversation-tools"><select :value="activeId" aria-label="切换会话" @change="nav(type, { session: $event.target.value, agent: agentId })"><option value="">新会话</option><option v-for="session in sessions" :key="session.sessionId" :value="session.sessionId">{{ session.sessionTitle }}</option></select><button class="text-button" @click="newSession"><Icon name="plus" :size="16" />新会话</button></div><div ref="scrollPane" class="conversation-scroll" aria-live="polite" aria-relevant="additions text"><div v-if="loading" class="loading-placeholder">正在加载会话…</div><div v-else-if="!messages.length" class="conversation-welcome"><span class="welcome-flower">✳</span><span class="eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</span><h2>{{ work ? '你的下一个目标，是什么？' : '今天，想从哪里开始？' }}</h2><p>{{ work ? '研究一个问题，打磨一篇文章，或探索一个项目。' : '让零散的想法在对话中，慢慢变得清晰。' }}</p><div class="prompt-suggestions"><button v-for="suggestion in (work ? ['研究 AI Agent 的产品设计趋势', '为我的新项目整理一份行动计划', '分析并优化这篇文章的结构'] : ['帮我拆解一个复杂的概念', '一起头脑风暴下一个好点子', '如何更高效地整理学习笔记？'])" :key="suggestion" @click="input = suggestion"><Icon :name="work ? 'workflow' : 'chat'" :size="17" />{{ suggestion }}<Icon name="arrow" :size="16" /></button></div></div>
-        <div v-if="work && events.length" class="execution-log"><div class="row spread"><h3><Icon name="workflow" :size="17" />执行过程 <span>{{ events.length }} 个阶段</span></h3><span class="status-pill" :class="status">{{ statusText }}</span></div><details v-for="(event, index) in events" :key="index" :open="index === events.length - 1 && busy"><summary><span class="stage-number">{{ String(index + 1).padStart(2, '0') }}</span><span>{{ sectionLabels[event.sectionType] || event.sectionType || event.clientType || '阶段输出' }}</span><small v-if="event.round">第 {{ event.round }} 轮</small><small v-if="event.step">步骤 {{ event.step }}</small><Icon name="down" :size="14" /></summary><pre>{{ event.sectionContent }}</pre></details></div>
+    <section class="conversation-main"><header class="conversation-header"><template v-if="focus || run"><button class="conversation-title-button" type="button" @click="sessionsOpen = true"><Icon name="chat" :size="16" /><span class="conversation-title">{{ currentTitle }}</span><Icon name="down" :size="13" /></button><span class="status-pill" :class="status">{{ statusText }}</span><span v-if="isDemo" class="tag sage">演示体验</span><span class="conversation-header__spacer"></span><button v-if="focus" class="context-button" type="button" aria-label="上下文" @click="contextOpen = true"><Icon name="settings" :size="15" /><span>上下文</span></button><button v-if="run" class="context-button run-inspector-button" type="button" aria-label="打开执行面板" aria-haspopup="dialog" :aria-expanded="inspectorOpen" @click="inspectorOpen = true"><Icon name="list" :size="15" /><span>执行面板</span></button></template><template v-else><div class="row"><span class="quick-icon sage"><Icon :name="work ? 'sparkles' : 'chat'" :size="19" /></span><div><h1>{{ work ? '和智能体一起，把想法落地' : '给每一个好奇，留一点空间' }}</h1><p>{{ work ? '目标、行动与结果，清晰可见。' : '聊想法，读资料，找到新的可能。' }}</p></div></div><span v-if="isDemo" class="tag sage">演示体验</span></template></header>
+      <div class="conversation-body"><div class="conversation-thread"><div v-if="run" class="run-stack"><ActivityPill v-if="showPill" :status="runStatus" :view="runStages" :started-at="storeRunVisible ? runState.startedAt : null" :updated-at="runState.updatedAt" :error="errorText" @open="openInspector" /><StageRail :view="runStages" :error="errorText" @retry="retryRun" @history="loadSession(activeId)" /></div><div class="mobile-conversation-tools"><select :value="activeId" aria-label="切换会话" @change="nav(type, { session: $event.target.value, agent: agentId })"><option value="">新会话</option><option v-for="session in sessions" :key="session.sessionId" :value="session.sessionId">{{ session.sessionTitle }}</option></select><button class="text-button" @click="newSession"><Icon name="plus" :size="16" />新会话</button></div><div ref="scrollPane" class="conversation-scroll" aria-live="polite" aria-relevant="additions text"><div v-if="loading" class="loading-placeholder">正在加载会话…</div><div v-else-if="!messages.length" class="conversation-welcome"><span class="welcome-flower">✳</span><span class="eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</span><h2>{{ work ? '你的下一个目标，是什么？' : '今天，想从哪里开始？' }}</h2><p>{{ work ? '研究一个问题，打磨一篇文章，或探索一个项目。' : '让零散的想法在对话中，慢慢变得清晰。' }}</p><div class="prompt-suggestions"><button v-for="suggestion in (work ? ['研究 AI Agent 的产品设计趋势', '为我的新项目整理一份行动计划', '分析并优化这篇文章的结构'] : ['帮我拆解一个复杂的概念', '一起头脑风暴下一个好点子', '如何更高效地整理学习笔记？'])" :key="suggestion" @click="input = suggestion"><Icon :name="work ? 'workflow' : 'chat'" :size="17" />{{ suggestion }}<Icon name="arrow" :size="16" /></button></div></div>
         <div v-if="messages.length && !loading" class="message-list"><article v-for="(message, index) in messages" :key="activeId + ':' + (message.messageType || type) + ':' + (message.messageSeq || index)" class="message" :class="message.messageRole"><span class="message-avatar"><Icon v-if="message.messageRole !== 'user'" name="sparkles" :size="18" /><template v-else>{{ state.auth?.userName?.slice(0,1) || '我' }}</template></span><div class="message-content"><div class="message-author">{{ message.messageRole === 'user' ? '你' : 'ZFlow' }}<span v-if="message.messageRole !== 'user' && isDemo" class="tag sage">演示回复</span></div><div v-if="message.messageRole === 'user'" class="user-content">{{ message.messageContent }}</div><div v-else-if="message.messageContent" class="markdown" v-html="html(message.messageContent)"></div><span v-else class="typing-indicator">正在思考<span>•••</span></span><button v-if="message.messageRole !== 'user' && message.messageContent" class="icon-button" aria-label="复制回复" @click="copy(message.messageContent)"><Icon name="copy" :size="14" /></button></div></article></div>
         <div v-if="errorText" class="form-error conversation-error" role="alert">{{ errorText }}</div><div v-if="status === 'unknown' && !errorText" class="info-note warning conversation-error">已断开前端连接，后台任务可能继续执行。可以重新打开会话查看历史，请勿重复提交同一任务。</div><div v-if="otherRunActive" class="info-note warning conversation-error">另一个会话的任务仍在运行。请切回该会话停止，或等待完成后再发送。</div>
       </div>
-      <div class="conversation-compose"><div v-if="optionsOpen && !focus" class="compose-options"><template v-if="work"><label v-for="(_, i) in 3" :key="i">{{ ['最大轮次', '最大重试', '最大步数'][i] }}<input v-if="i === 0" v-model.number="maxRound" type="number" min="1" :disabled="busy" /><input v-else-if="i === 1" v-model.number="maxRetry" type="number" min="1" :disabled="busy" /><input v-else v-model.number="maxPace" type="number" min="1" :disabled="busy" /></label></template><template v-else><label>关联知识库<select v-model="ragTag" :disabled="busy"><option value="">不使用知识库</option><option v-for="rag in state.rags" :key="rag.ragTag" :value="rag.ragTag">{{ rag.ragTag }}</option></select></label><div class="tool-checkboxes"><label v-for="mcp in state.mcps" :key="mcp.mcpId" class="checkbox-line"><input v-model="mcpIds" type="checkbox" :value="mcp.mcpId" :disabled="busy" />{{ mcp.mcpName }}</label><span v-if="!state.mcps.length">暂无可用工具</span></div></template></div>
-        <div v-if="userCount >= maxMessages" class="info-note warning">本会话已达到 {{ maxMessages }} 条用户消息，请创建或切换会话。</div><form class="chat-composer" @submit.prevent="send"><textarea v-model="input" :placeholder="work ? '描述你的目标，剩下的我们一起完成…' : '把你的想法写在这里…'" aria-label="消息内容" rows="3" :disabled="busy || loading || userCount >= maxMessages" @keydown.enter.exact="event => { if (!event.isComposing) { event.preventDefault(); send(); } }" /><div class="composer-bottom"><div class="row"><select v-if="work" v-model="agentId" class="composer-select" aria-label="选择执行智能体" :disabled="busy"><option v-if="!state.agents.length" value="">暂无可用智能体</option><option v-for="agent in state.agents" :key="agent.agentId" :value="agent.agentId">{{ agent.agentName }}</option></select><select v-else-if="!focus" v-model="clientId" class="composer-select" aria-label="选择对话客户端" :disabled="busy"><option v-if="!state.clients.length" value="">暂无可用对话客户端</option><option v-for="client in state.clients" :key="client.clientId" :value="client.clientId">{{ client.clientName }} · {{ client.modelName }}</option></select><button v-if="!focus" type="button" class="icon-button" aria-label="会话选项" :aria-expanded="optionsOpen" @click="optionsOpen = !optionsOpen"><Icon name="settings" :size="17" /></button></div><button v-if="busy" type="button" class="send-button" aria-label="停止接收" @click="stop"><Icon name="stop" :size="15" /></button><button v-else class="send-button" type="submit" aria-label="发送消息" :disabled="!canSend || (work && [maxRound,maxRetry,maxPace].some(n => !Number.isInteger(n) || n < 1))"><Icon name="up" :size="19" /></button></div></form><div class="composer-hint"><span>{{ isDemo ? '当前为界面演示，登录后使用真实 AI 服务。' : work ? '断开连接不会保证停止后台任务。' : 'AI 可能会出错，请核实重要信息。' }}</span><span>Enter 发送 · Shift Enter 换行</span></div>
+      <div class="conversation-compose"><div v-if="userCount >= maxMessages" class="info-note warning">本会话已达到 {{ maxMessages }} 条用户消息，请创建或切换会话。</div><form class="chat-composer" @submit.prevent="send"><textarea v-model="input" :placeholder="work ? '描述你的目标，剩下的我们一起完成…' : '把你的想法写在这里…'" aria-label="消息内容" rows="3" :disabled="busy || loading || userCount >= maxMessages" @keydown.enter.exact="event => { if (!event.isComposing) { event.preventDefault(); send(); } }" /><div class="composer-bottom"><div class="row"><select v-if="work" v-model="agentId" class="composer-select" aria-label="选择执行智能体" :disabled="busy"><option v-if="!state.agents.length" value="">暂无可用智能体</option><option v-for="agent in state.agents" :key="agent.agentId" :value="agent.agentId">{{ agent.agentName }}</option></select><select v-else-if="!focus" v-model="clientId" class="composer-select" aria-label="选择对话客户端" :disabled="busy"><option v-if="!state.clients.length" value="">暂无可用对话客户端</option><option v-for="client in state.clients" :key="client.clientId" :value="client.clientId">{{ client.clientName }} · {{ client.modelName }}</option></select></div><button v-if="busy" type="button" class="send-button send-button--stop" aria-label="停止接收" title="停止接收" @click="stop"><Icon name="stop" :size="14" /><span v-if="run" class="send-button__text">停止接收</span></button><button v-else class="send-button" type="submit" aria-label="发送消息" :disabled="!canSend || (work && [maxRound,maxRetry,maxPace].some(n => !Number.isInteger(n) || n < 1))"><Icon name="up" :size="19" /></button></div></form><div class="composer-hint"><span>{{ isDemo ? '当前为界面演示，登录后使用真实 AI 服务。' : work ? '断开连接不会保证停止后台任务。' : 'AI 可能会出错，请核实重要信息。' }}</span><span>Enter 发送 · Shift Enter 换行</span></div>
       </div>
         </div>
+        <RunInspector v-if="run" class="run-inspector" v-bind="runInspectorBind" />
         <ContextRail v-if="focus" class="context-rail" :clients="state.clients" :rags="state.rags" :mcps="state.mcps" :client-id="clientId" :rag-tag="ragTag" :mcp-ids="mcpIds" :busy="busy" :run-state="runState" :recent-runs="recentRuns" @update:client-id="clientId = $event" @update:rag-tag="ragTag = $event" @update:mcp-ids="mcpIds = $event" @open="onOpenRun" />
       </div>
     </section>
   </div>
+  <Sheet v-if="inspectorOpen && run" title="执行面板" @close="inspectorOpen = false"><RunInspector v-bind="runInspectorBind" /></Sheet>
   <SessionSheet v-if="sessionsOpen" :sessions="sessions" :active-id="activeId" :work="work" @close="sessionsOpen = false" @select="onSelectSession" @new="onNewSession" @rename="onRenameSession" @delete="onDeleteSession" />
   <Sheet v-if="contextOpen" title="上下文" @close="contextOpen = false"><ContextRail :clients="state.clients" :rags="state.rags" :mcps="state.mcps" :client-id="clientId" :rag-tag="ragTag" :mcp-ids="mcpIds" :busy="busy" :run-state="runState" :recent-runs="recentRuns" @update:client-id="clientId = $event" @update:rag-tag="ragTag = $event" @update:mcp-ids="mcpIds = $event" @open="onOpenRun" /></Sheet>
   <Modal v-if="rename" title="给会话一个新名字" @close="rename = null"><form class="modal-body form-stack" @submit.prevent="saveTitle"><label>会话名称<input v-model="sessionTitle" required maxlength="80" /></label><button class="primary-button">保存名称</button></form></Modal>
