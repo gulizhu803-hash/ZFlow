@@ -40,5 +40,6 @@ const emit = defineEmits(['close', 'select', 'new', 'rename', 'delete']);
 .session-sheet__title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 14px/1.5 var(--z-sans); color: var(--z-ink); }
 .session-sheet__actions { display: flex; gap: var(--z-space-1); opacity: 0; }
 .session-sheet__row:hover .session-sheet__actions, .session-sheet__row:focus-within .session-sheet__actions { opacity: 1; }
+@media (max-width: 767px) { .session-sheet__actions { opacity: 1; } }
 .session-sheet__empty { padding: var(--z-space-5) 0; font: 400 13px/1.5 var(--z-sans); color: var(--z-ink-4); }
 </style>

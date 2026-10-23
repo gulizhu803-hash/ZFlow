@@ -241,7 +241,10 @@ function onSelectSession(session) { sessionsOpen.value = false; chooseSession(se
 function onNewSession() { sessionsOpen.value = false; newSession(); }
 function onRenameSession(session) { sessionsOpen.value = false; rename.value = session; sessionTitle.value = session.sessionTitle; }
 function onDeleteSession(session) { sessionsOpen.value = false; deleteTarget.value = session; }
-function onOpenRun(run) { nav(run.sessionType || type.value, { session: run.sessionId }); }
+function onOpenRun(run) {
+  contextOpen.value = false;
+  nav(run.sessionType || type.value, { session: run.sessionId });
+}
 async function send() {
   if (!canSend.value) return;
   if (otherRunActive.value) { notify('另一个会话的任务仍在运行，请先切回该会话停止或等待完成', 'info'); return; }
