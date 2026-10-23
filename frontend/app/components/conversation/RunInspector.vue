@@ -21,6 +21,7 @@ const emit = defineEmits(['update:maxRound', 'update:maxRetry', 'update:maxPace'
 const STATE_TEXT = { done: '完成', active: '进行中', pending: '未开始', error: '中断' };
 const nodes = computed(() => (props.view ? props.view.nodes : []));
 const failed = computed(() => Boolean(props.view && props.view.failed));
+const retryable = computed(() => Boolean(props.view && props.view.retryable));
 const current = computed(() => nodes.value.find(node => node.state === 'active') || nodes.value.find(node => node.state === 'error') || null);
 
 function setNumber(event, key) {
@@ -72,10 +73,10 @@ function toggleMcp(id, checked) {
           <p v-else class="run-inspector__empty">{{ current.state === 'pending' ? '该阶段尚未开始。' : '该阶段还没有文本输出。' }}</p>
         </div>
         <div v-if="failed" class="run-inspector__error">
-          <p class="run-inspector__error-text" role="alert">{{ error || '任务状态未知，请查看历史确认。' }}</p>
+          <p class="run-inspector__error-text" role="alert">{{ error || (retryable ? '执行失败，请查看历史确认后再重试。' : '任务状态未知，请查看历史确认。') }}</p>
           <div class="run-inspector__actions">
             <button type="button" class="run-inspector__action" @click="emit('history')"><Icon name="clock" :size="14" />查看历史</button>
-            <button type="button" class="run-inspector__action run-inspector__action--primary" @click="emit('retry')"><Icon name="refresh" :size="14" />重试</button>
+            <button v-if="retryable" type="button" class="run-inspector__action run-inspector__action--primary" @click="emit('retry')"><Icon name="refresh" :size="14" />重试</button>
           </div>
         </div>
       </section>

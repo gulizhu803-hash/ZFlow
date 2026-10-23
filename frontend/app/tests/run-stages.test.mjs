@@ -33,6 +33,7 @@ test('no events keep four pending nodes and never fake progress', () => {
   assert.equal(view.total, 4);
   assert.equal(view.reached, 0);
   assert.equal(view.inFlight, true);
+  assert.equal(view.retryable, false);
   assert.deepEqual(states(view), ['pending', 'pending', 'pending', 'pending']);
 });
 
@@ -55,6 +56,7 @@ test('completed marks reached nodes done and keeps per-stage durations', () => {
   assert.equal(view.reached, 4);
   assert.equal(view.inFlight, false);
   assert.equal(view.failed, false);
+  assert.equal(view.retryable, false);
   assert.equal(view.nodes[0].durationMs, 1000);
   assert.equal(view.nodes[0].duration, '00:01');
   assert.equal(view.nodes[3].durationMs, 500);
@@ -64,6 +66,7 @@ test('failed puts the last known node in the error state', () => {
   const view = deriveRunStages({ status: 'failed', updatedAt: 2500, stages: [entry('inspector_mcp', 1000), entry('planner_step', 2000)] });
   assert.deepEqual(states(view), ['done', 'error', 'pending', 'pending']);
   assert.equal(view.failed, true);
+  assert.equal(view.retryable, true);
   assert.equal(view.reached, 2);
 });
 
@@ -71,6 +74,7 @@ test('unknown keeps the last known node as error and never marks completion', ()
   const view = deriveRunStages({ status: 'unknown', stages: [entry('runner_result', 1000, '部分输出')] });
   assert.deepEqual(states(view), ['pending', 'pending', 'error', 'pending']);
   assert.equal(view.failed, true);
+  assert.equal(view.retryable, false);
   assert.equal(view.nodes[2].output, '部分输出');
   assert.equal(view.inFlight, false);
 });
@@ -79,6 +83,7 @@ test('stopped keeps the last known node done without an active ring', () => {
   const view = deriveRunStages({ status: 'stopped', updatedAt: 1800, stages: [entry('inspector_mcp', 1000), entry('planner_step', 1500)] });
   assert.deepEqual(states(view), ['done', 'done', 'pending', 'pending']);
   assert.equal(view.failed, false);
+  assert.equal(view.retryable, false);
   assert.equal(view.inFlight, false);
 });
 

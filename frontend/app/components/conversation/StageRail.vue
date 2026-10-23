@@ -12,6 +12,7 @@ const emit = defineEmits(['retry', 'history']);
 const STATE_TEXT = { done: '完成', active: '进行中', pending: '未开始', error: '中断' };
 const nodes = computed(() => (props.view ? props.view.nodes : []));
 const failed = computed(() => Boolean(props.view && props.view.failed));
+const retryable = computed(() => Boolean(props.view && props.view.retryable));
 // 默认展开：当前阶段 → 出错节点 → 最后一个已完成节点。
 const defaultRole = computed(() => {
   const list = nodes.value;
@@ -73,10 +74,10 @@ function metaOf(node) {
       <p v-else class="stage-rail__empty">{{ openNode.state === 'pending' ? '尚未开始。' : openNode.state === 'active' ? '正在等待该阶段输出…' : '该阶段没有文本输出。' }}</p>
     </div>
     <div v-if="failed" class="stage-rail__error" role="alert">
-      <p class="stage-rail__error-text">{{ error || '任务状态未知，请查看历史确认后再决定是否重试。' }}</p>
+      <p class="stage-rail__error-text">{{ error || (retryable ? '执行失败，请查看历史确认后再重试。' : '任务状态未知，请查看历史确认。') }}</p>
       <div class="stage-rail__actions">
         <button type="button" class="stage-rail__action" @click="emit('history')"><Icon name="clock" :size="14" />查看历史</button>
-        <button type="button" class="stage-rail__action stage-rail__action--primary" @click="emit('retry')"><Icon name="refresh" :size="14" />重试</button>
+        <button v-if="retryable" type="button" class="stage-rail__action stage-rail__action--primary" @click="emit('retry')"><Icon name="refresh" :size="14" />重试</button>
       </div>
     </div>
   </div>

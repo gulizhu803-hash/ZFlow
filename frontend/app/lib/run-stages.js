@@ -62,7 +62,7 @@ function toEntries(stages) {
  * 从 run 状态派生四节点视图。
  * @param {{ status?: string, stages?: Array, updatedAt?: number|null }} input
  * @returns {{ status: string, total: number, reached: number, current: string|null, currentIndex: number,
- *            activeIndex: number, inFlight: boolean, failed: boolean, progressLabel: string,
+ *            activeIndex: number, inFlight: boolean, failed: boolean, retryable: boolean, progressLabel: string,
  *            nodes: Array<{ role: string, label: string, index: number, state: 'done'|'active'|'pending'|'error',
  *                            count: number, detail: string, output: string, durationMs: number|null, duration: string }> }}
  */
@@ -133,6 +133,8 @@ export function deriveRunStages({ status = 'idle', stages = [], updatedAt = null
     activeIndex: inFlight && lastRole ? indices.indexOf(lastRole) : -1,
     inFlight,
     failed: isError,
+    // unknown 也属于 failed 视图，但 P0 禁止在状态未知时重复提交；只有明确 failed 可重试。
+    retryable: status === 'failed',
     progressLabel: reachedRoles.length + '/' + STAGE_TOTAL,
     nodes
   };

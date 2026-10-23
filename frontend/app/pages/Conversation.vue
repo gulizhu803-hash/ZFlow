@@ -63,7 +63,8 @@ const runStageEntries = computed(() => {
 const runStages = computed(() => deriveRunStages({
   status: runStatus.value,
   stages: runStageEntries.value,
-  updatedAt: runState.value.updatedAt
+  // 历史阶段不能借用另一条 run 的 updatedAt，否则 duration 会串会话。
+  updatedAt: storeRunVisible.value ? runState.value.updatedAt : null
 }));
 const busy = computed(() => storeRunVisible.value && deriveUi(runState.value).showPill);
 const canSend = computed(() => input.value.trim() && deriveUi(runState.value).canSend && !otherRunActive.value && !loading.value && userCount.value < maxMessages.value && (work.value ? selectedAgent.value : clientId.value));
@@ -252,7 +253,7 @@ function stop() {
 }
 // 用户明确触发的重试：不自动重发，参数与草稿原样沿用。
 function retryRun() {
-  if (busy.value) return;
+  if (busy.value || runStatus.value !== 'failed') return;
   if (!input.value.trim() && runState.value.prompt) input.value = runState.value.prompt;
   send();
 }
