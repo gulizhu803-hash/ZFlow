@@ -97,10 +97,15 @@
 }
 .conversation-page--run .send-button:hover { background: var(--z-blue-hover); }
 .conversation-page--run .send-button--stop {
+  /* 基础 .send-button 是 grid，两行堆叠会把「停止接收」压到按钮底边，这里改成行内 flex。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: auto;
   min-width: 96px;
   padding: 0 var(--z-space-3);
   gap: 6px;
+  white-space: nowrap;
   border-radius: var(--z-r-control);
   background: var(--z-ink);
   color: var(--z-paper);
