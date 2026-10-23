@@ -121,3 +121,50 @@
   .conversation-page--focus .conversation-scroll { padding: var(--z-space-4) var(--z-space-4) 0; }
   .conversation-page--focus .conversation-compose { padding: var(--z-space-3) var(--z-space-4) var(--z-space-4); }
 }
+
+/* ---------- next-task actions: shown after stopped / unknown ----------
+   Composer 在 stopped/unknown 下保持禁用（P0 canSend=false），这里只补显式入口。 */
+.next-task-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--z-space-3);
+  margin-bottom: var(--z-space-3);
+  padding: var(--z-space-3) var(--z-space-4);
+  border: 1px solid var(--z-line);
+  border-radius: var(--z-r-card);
+  background: var(--z-paper);
+}
+.next-task-actions__copy {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: 400 12px/1.6 var(--z-sans);
+  color: var(--z-ink-2);
+  overflow-wrap: anywhere;
+}
+.next-task-actions__actions { display: flex; flex-wrap: wrap; gap: var(--z-space-2); margin-left: auto; }
+.next-task-actions__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 var(--z-space-3);
+  border: 1px solid var(--z-line-strong);
+  border-radius: var(--z-r-control);
+  background: var(--z-paper);
+  color: var(--z-ink-2);
+  font: 500 12px/1 var(--z-sans);
+  white-space: nowrap;
+}
+.next-task-actions__button:hover { background: var(--z-fill); color: var(--z-ink); }
+.next-task-actions__button:focus-visible { outline: none; box-shadow: var(--z-focus); }
+.next-task-actions__button--primary { border-color: transparent; background: var(--z-blue-fill); color: var(--z-on-blue); }
+.next-task-actions__button--primary:hover { background: var(--z-blue-hover); color: var(--z-on-blue); }
+.next-task-actions--warning { border-color: rgba(178, 80, 0, .24); background: rgba(178, 80, 0, .06); }
+.next-task-actions--warning .next-task-actions__copy { color: var(--z-orange); }
+
+@media (max-width: 767px) {
+  .next-task-actions { padding: var(--z-space-2) var(--z-space-3); gap: var(--z-space-2); }
+  .next-task-actions__actions { margin-left: 0; width: 100%; }
+  .next-task-actions__button { flex: 1 1 auto; }
+}
