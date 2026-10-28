@@ -53,8 +53,8 @@
     {
       "key": "modelId",
       "type": "string",
-      "required": false,
-      "label": "模型配置标识；与 clientId 不同"
+      "required": true,
+      "label": "模型配置标识；必填，与 clientId 不同"
     },
     {
       "key": "templateId",
