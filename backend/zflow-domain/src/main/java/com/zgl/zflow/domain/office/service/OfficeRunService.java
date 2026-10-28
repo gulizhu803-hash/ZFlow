@@ -1,5 +1,6 @@
 package com.zgl.zflow.domain.office.service;
 
+import com.zgl.zflow.domain.office.gateway.IArtifactRenderer;
 import com.zgl.zflow.domain.office.model.*;
 import com.zgl.zflow.domain.office.repository.IOfficeRepository;
 import com.zgl.zflow.types.exception.OfficeException;
@@ -8,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionException;
+import java.util.List;
 import static com.zgl.zflow.domain.office.model.OfficeJson.*;
 
 @Service
@@ -16,8 +18,12 @@ import static com.zgl.zflow.domain.office.model.OfficeJson.*;
 public class OfficeRunService {
     private final IOfficeRepository repository;
     private final OfficeTransactions transactions;
+    private final List<IArtifactRenderer<?>> artifactRenderers;
     public OfficeTransactions.Accepted create(long ownerId,String key,OfficeRequest input) {
-        key(key); OfficeRequest request=input.normalize(); String requestHash=hash(request.canonical());
+        key(key); OfficeRequest request=input.normalize();
+        // 能力闸门必须早于任何落库动作：否则未实现的类型会留下 status=QUEUED 的孤儿 run。
+        requireImplemented(request);
+        String requestHash=hash(request.canonical());
         OfficeRun previous;
         try { previous=repository.findRequest(ownerId,key); }
         catch(RuntimeException failure) {
@@ -41,6 +47,24 @@ public class OfficeRunService {
             }
             throw failure;
         }
+    }
+    /**
+     * 产物能力闸门：DRAWIO 走老的 DiagramSpecRenderer 路径，豁免；
+     * 其它类型必须能在注入的渲染器列表里按 type() 找到实现，否则入口即拒绝。
+     * 直接依赖 domain 自己的 IArtifactRenderer，不引用 infrastructure 的注册表，保持分层。
+     */
+    private void requireImplemented(OfficeRequest request) {
+        for (String type : request.artifactTypes()) {
+            if ("DRAWIO".equals(type) || implemented(type)) continue;
+            throw new OfficeException(503, "OFFICE_ARTIFACT_UNSUPPORTED", "该产物类型尚未实现：" + type);
+        }
+    }
+    private boolean implemented(String type) {
+        if (artifactRenderers == null) return false;
+        for (IArtifactRenderer<?> renderer : artifactRenderers) {
+            if (renderer != null && type.equals(renderer.type())) return true;
+        }
+        return false;
     }
     public static OfficeException unknownCommit() {
         return new OfficeException(503,"OFFICE_COMMIT_OUTCOME_UNKNOWN","暂时无法核实提交结果，请保留原幂等键重试");

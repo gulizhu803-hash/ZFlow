@@ -14,12 +14,13 @@ public final class OfficeRequests {
         fields(body,Set.of("title"));return new CreateSession(text(body,"title",true));
     }
     public static OfficeRequest run(JsonNode body) {
-        fields(body,Set.of("sessionId","prompt","artifactTypes","diagramType","title","retryOfRunId"));
+        fields(body,Set.of("sessionId","prompt","artifactTypes","diagramType","title","retryOfRunId","theme","targetSlides"));
         JsonNode types=body.get("artifactTypes");List<String> values=new ArrayList<>();
         if(types==null||!types.isArray())throw OfficeException.invalid("artifactTypes 必须为数组");
         for(JsonNode value:types){if(!value.isTextual())throw OfficeException.invalid("artifactTypes 元素必须为字符串");values.add(value.textValue());}
         return new OfficeRequest(text(body,"sessionId",true),text(body,"prompt",true),values,
-                text(body,"diagramType",false),text(body,"title",false),text(body,"retryOfRunId",false));
+                text(body,"diagramType",false),text(body,"title",false),text(body,"retryOfRunId",false),
+                text(body,"theme",false),integer(body,"targetSlides"));
     }
     public static SaveRevision save(JsonNode body) {
         fields(body,Set.of("baseVersion","xml"));JsonNode version=body.get("baseVersion");
@@ -35,5 +36,11 @@ public final class OfficeRequests {
         if(value==null||value.isNull()){if(required)throw OfficeException.invalid(name+" 必填");return null;}
         if(!value.isTextual())throw OfficeException.invalid(name+" 必须为字符串");
         return value.textValue();
+    }
+    private static Integer integer(JsonNode body,String name) {
+        JsonNode value=body.get(name);
+        if(value==null||value.isNull())return null;
+        if(!value.isIntegralNumber()||!value.canConvertToInt())throw OfficeException.invalid(name+" 必须为整数");
+        return value.intValue();
     }
 }
